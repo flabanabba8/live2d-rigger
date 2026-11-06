@@ -1,6 +1,6 @@
 # Live2D Rig Doctor
 
-Inspect common resource references in a Cubism `model3.json` file, reporting missing, invalid or unsafe model, texture, physics, pose, userdata, display-info, expression, motion and motion-sound paths. A second tool checks motion segment structure and compares motion targets to IDs in a supplied display-info file. The source files are read only. [Live2D's SDK documentation](https://docs.live2d.com/en/cubism-sdk-tutorials/model-add-to-sample-project/) describes the model settings format.
+Inspect common resource references in a Cubism `model3.json` file, reporting missing, invalid or unsafe model, texture, physics, pose, userdata, display-info, expression, motion and motion-sound paths. A second tool checks motion segment structure and compares motion targets to IDs in a supplied display-info file. The source files are read only; model, display-info and motion JSON reads reject a file changed or atomically replaced during the bounded read. [Live2D's SDK documentation](https://docs.live2d.com/en/cubism-sdk-tutorials/model-add-to-sample-project/) describes the model settings format.
 
 This is an early static-analysis prototype. It does not parse the MOC3 binary, validate texture contents, load or render a model, exercise parameters, detect clipping/deformation, or inspect every Cubism extension. A present file is not proof of a usable rig. Test in the intended Cubism runtime and visually review the animation. Only synthetic fixtures have been tested; no existing user model has been modified or reviewed.
 

@@ -3,6 +3,7 @@ import hashlib
 import json
 import math
 from pathlib import Path
+from .core import stable_bytes
 
 PRIVATE = {'.ssh', '.gnupg', '.aws', '.azure', '.codex', '.docker', '.kube', '.pki', '.config', '.hermes'}
 
@@ -13,8 +14,7 @@ def read_json(value, suffix):
     path = path.resolve(strict=True)
     if any(x in PRIVATE for x in path.parts) or not path.is_file() or not path.name.endswith(suffix):
         raise ValueError('Choose the requested Cubism JSON file outside private configuration')
-    with path.open('rb') as f: raw = f.read(8 * 1024**2 + 1)
-    if len(raw) > 8 * 1024**2: raise ValueError('Cubism JSON exceeds 8 MiB')
+    raw = stable_bytes(path, 8 * 1024**2)
     try: data = json.loads(raw.decode('utf-8-sig'))
     except (ValueError, RecursionError) as exc: raise ValueError('Invalid Cubism JSON') from exc
     if not isinstance(data, dict): raise ValueError('Expected a JSON object')

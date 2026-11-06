@@ -1,9 +1,26 @@
 """Read-only inspection of common Cubism model3 resource references."""
 import hashlib
 import json
+import os
+import stat
 from pathlib import Path, PurePosixPath
 
 PRIVATE = {'.ssh', '.gnupg', '.aws', '.azure', '.codex', '.docker', '.kube', '.pki', '.config', '.hermes'}
+
+
+def stable_bytes(path, limit):
+    fd = os.open(path, os.O_RDONLY | getattr(os, 'O_NOFOLLOW', 0) | getattr(os, 'O_NONBLOCK', 0))
+    with os.fdopen(fd, 'rb') as stream:
+        before = os.fstat(stream.fileno())
+        if not stat.S_ISREG(before.st_mode): raise ValueError('Choose a regular Cubism JSON file')
+        raw = stream.read(limit + 1)
+        after = os.fstat(stream.fileno())
+    if len(raw) > limit: raise ValueError('Cubism JSON exceeds size limit')
+    current = Path(path).lstat()
+    identity = lambda x: (x.st_dev, x.st_ino, x.st_size, x.st_mtime_ns)
+    if identity(before) != identity(after) or identity(after) != identity(current) or not stat.S_ISREG(current.st_mode):
+        raise ValueError('Cubism JSON changed while reading')
+    return raw
 
 
 def inspect_resources(model_path):
@@ -13,10 +30,7 @@ def inspect_resources(model_path):
     p = p.resolve(strict=True)
     if any(x in PRIVATE for x in p.parts) or not p.is_file() or not p.name.endswith('.model3.json'):
         raise ValueError('Select a model3.json file outside private configuration')
-    with p.open('rb') as f:
-        raw = f.read(4 * 1024**2 + 1)
-    if len(raw) > 4 * 1024**2:
-        raise ValueError('Model settings exceed 4 MiB')
+    raw = stable_bytes(p, 4 * 1024**2)
     try:
         model = json.loads(raw)
     except (ValueError, RecursionError) as exc:

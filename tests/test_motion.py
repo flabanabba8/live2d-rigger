@@ -2,11 +2,14 @@ import importlib.util
 import json
 from pathlib import Path
 import tempfile
+import sys
 import unittest
 
-spec = importlib.util.spec_from_file_location('rig_motion_fixture', Path(__file__).parents[1] / 'motion.py')
-core = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(core)
+root = Path(__file__).parents[1]
+spec = importlib.util.spec_from_file_location('rig_motion_fixture', root/'__init__.py', submodule_search_locations=[str(root)])
+plugin = importlib.util.module_from_spec(spec); sys.modules[spec.name] = plugin; spec.loader.exec_module(plugin)
+core = plugin.motion
+
 
 class MotionTests(unittest.TestCase):
     def setUp(self):

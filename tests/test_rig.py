@@ -1,14 +1,30 @@
 import importlib.util
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location('rig_core', Path(__file__).parents[1] / 'core.py')
 core = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(core)
 
 class RigTests(unittest.TestCase):
+    def test_replacement_during_json_read_is_rejected(self):
+        with tempfile.TemporaryDirectory(dir='/tmp') as tmp:
+            source = Path(tmp)/'fixture.model3.json'; source.write_text('{"FileReferences": {}}')
+            replacement = Path(tmp)/'replacement'; replacement.write_text('{"FileReferences": {}}')
+            original = core.os.fstat; calls = 0
+            def replace(fd):
+                nonlocal calls
+                calls += 1
+                value = original(fd)
+                if calls == 2: os.replace(replacement, source)
+                return value
+            with patch.object(core.os, 'fstat', side_effect=replace):
+                with self.assertRaisesRegex(ValueError, 'changed while reading'): core.inspect_resources(str(source))
+
     def test_common_resources_and_missing(self):
         with tempfile.TemporaryDirectory(dir='/tmp') as tmp:
             root = Path(tmp)
