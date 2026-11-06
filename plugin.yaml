@@ -1,0 +1,9 @@
+name: live2d-rig-doctor
+version: "0.1.0"
+description: "Inspect Live2D Cubism model resource references."
+author: "Live2D Rig Doctor contributors"
+license: GPL-3.0-or-later
+requires_hermes: ">=0.22.0"
+provides_tools:
+  - rig_inspect_resources
+  - rig_check_motion
