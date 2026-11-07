@@ -1,4 +1,4 @@
-# Live2D Rig Doctor
+# Live2D Rigger
 
 Inspect common resource references in a Cubism `model3.json` file, reporting missing, invalid or unsafe model, texture, physics, pose, userdata, display-info, expression, motion and motion-sound paths. A second tool checks motion segment structure and compares motion targets to IDs in a supplied display-info file. The source files are read only; model, display-info and motion JSON reads reject a file changed or atomically replaced during the bounded read. [Live2D's SDK documentation](https://docs.live2d.com/en/cubism-sdk-tutorials/model-add-to-sample-project/) describes the model settings format.
 
