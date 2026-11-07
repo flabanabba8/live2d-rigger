@@ -10,9 +10,9 @@ PRIVATE = {'.ssh', '.gnupg', '.aws', '.azure', '.codex', '.docker', '.kube', '.p
 
 def read_json(value, suffix):
     path = Path(value).expanduser()
-    if path.is_symlink() or any(x in PRIVATE for x in path.parts): raise ValueError('Private paths and symlink inputs are unsupported')
+    if path.is_symlink() or any(x.casefold() in PRIVATE for x in path.parts): raise ValueError('Private paths and symlink inputs are unsupported')
     path = path.resolve(strict=True)
-    if any(x in PRIVATE for x in path.parts) or not path.is_file() or not path.name.endswith(suffix):
+    if any(x.casefold() in PRIVATE for x in path.parts) or not path.is_file() or not path.name.endswith(suffix):
         raise ValueError('Choose the requested Cubism JSON file outside private configuration')
     raw = stable_bytes(path, 8 * 1024**2)
     try: data = json.loads(raw.decode('utf-8-sig'))

@@ -11,6 +11,11 @@ core = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(core)
 
 class RigTests(unittest.TestCase):
+    def test_mixed_case_private_directory_is_rejected(self):
+        with tempfile.TemporaryDirectory(dir='/tmp') as tmp:
+            folder=Path(tmp)/'.CoDeX';folder.mkdir();source=folder/'fixture.model3.json';source.write_text('{}')
+            with self.assertRaises(ValueError):core.inspect_resources(str(source))
+
     def test_replacement_during_json_read_is_rejected(self):
         with tempfile.TemporaryDirectory(dir='/tmp') as tmp:
             source = Path(tmp)/'fixture.model3.json'; source.write_text('{"FileReferences": {}}')
