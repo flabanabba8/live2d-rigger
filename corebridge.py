@@ -75,7 +75,7 @@ def measure(frames, fps):
     blinks = sum(1 for a, b in zip(eye, eye[1:]) if a >= .5 > b)
     keep = {'seconds': round(len(frames)/fps, 1), 'head_turn_left_right_degrees': rng('ParamAngleX'), 'head_nod_degrees': rng('ParamAngleY'), 'head_tilt_degrees': rng('ParamAngleZ'),
             'body_sway_degrees': rng('ParamBodyAngleZ', 'ParamBodyAngleX'), 'breathing_0_to_1': rng('ParamBreath'), 'eyes_look_left_right': rng('ParamEyeBallX'), 'blinks': blinks,
-            'hair_swing_strength_0_to_1': swing('ParamHairL1', 'ParamHairL2', 'ParamHairL3', 'ParamHairR1', 'ParamHairR2', 'ParamHairR3', 'ParamHairFront'), 'skirt_swing_0_to_1': swing('ParamSkirt')}
+            'hair_swing_strength_0_to_1': swing('ParamHairBack', 'ParamHairL1', 'ParamHairL2', 'ParamHairL3', 'ParamHairR1', 'ParamHairR2', 'ParamHairR3', 'ParamHairFront'), 'skirt_swing_0_to_1': swing('ParamSkirt')}
     return {k: v for k, v in keep.items() if v is not None}
 
 
@@ -111,6 +111,15 @@ class Session:
         exe = find_chromium()
         self.browser = self.pw.chromium.launch(**({'executable_path': exe} if exe else {}), args=['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'])
         self.page = self.browser.new_page(viewport={'width': width, 'height': height})
+        # A common viewer assumes a Physics sidecar even for a static model. Adapt
+        # this known pattern in memory only; do not change or bundle user SDK files.
+        if not json.loads(self.model.read_text()).get('FileReferences',{}).get('Physics'):
+            source=(self.viewer/'viewer.js').read_text()
+            initial='const pb = await (await fetch(new URL(refs.Physics, manifestUrl))).arrayBuffer();\n    let physics = CubismPhysics.create(pb, pb.byteLength);'
+            reset='physics = CubismPhysics.create(pb, pb.byteLength);'
+            if initial in source and reset in source:
+                source=source.replace(initial,'let physics = {evaluate() {}};',1).replace(reset,'physics = {evaluate() {}};')
+                self.page.route('**/viewer.js',lambda route:route.fulfill(status=200,content_type='application/javascript',body=source))
         self.page.goto(f'http://127.0.0.1:{self.srv.server_port}/viewer/index.html?model=/model/{self.model.name}&width={width}&height={height}&test=1')
         self.page.wait_for_function('window.ready===true', timeout=120000)
         self.page.add_style_tag(content=f'aside{{display:none!important}}main{{display:block!important}}canvas{{width:{width}px!important;height:{height}px!important;max-height:none!important}}')
@@ -132,6 +141,34 @@ def inspect(model, viewer):
         s.close()
 
 
+def domains(model, viewer):
+    """Evaluate every parameter endpoint and default against the loaded Core model."""
+    s=Session(model,viewer,540,810)
+    try:
+        parameters=s.page.evaluate('rig.parameters')
+        baseline=s.page.evaluate('()=>rig.frame({})')
+        result=[]
+        for param in parameters:
+            ident=param['id'];cases=[]
+            for value in (param['min'],param['default'],param['max']):
+                frames=s.page.evaluate('p=>rig.frame(p)',{ident:value})
+                coords=[v for mesh in frames for v in mesh['positions']]
+                if not all(math.isfinite(v) for v in coords) or not all(math.isfinite(mesh['opacity']) for mesh in frames):raise RuntimeError('Non-finite Core geometry or opacity: '+ident)
+                displacement=max((abs(x-y) for a,b in zip(baseline,frames) for x,y in zip(a['positions'],b['positions'])),default=0)
+                cases.append({'value':value,'max_coordinate_displacement':round(displacement,4)})
+            result.append({'id':ident,'min':param['min'],'default':param['default'],'max':param['max'],'cases':cases})
+        by_id={p['id']:p for p in parameters};combinations=[]
+        for x,y in (('ParamAngleX','ParamAngleY'),('ParamEyeBallX','ParamEyeBallY')):
+            if x not in by_id or y not in by_id:continue
+            for xv in (by_id[x]['min'],by_id[x]['max']):
+                for yv in (by_id[y]['min'],by_id[y]['max']):
+                    pose={x:xv,y:yv};frames=s.page.evaluate('p=>rig.frame(p)',pose)
+                    if not all(math.isfinite(v) for mesh in frames for v in mesh['positions']) or not all(math.isfinite(mesh['opacity']) for mesh in frames):raise RuntimeError('Non-finite Core geometry or opacity in combined pose')
+                    combinations.append(pose)
+        return {'mocSha256':s.moc_sha256,'parameters':result,'combined_extremes_checked':combinations,'notice':'Core endpoint and available XY diagonal checks only; other combinations, appearance and motion still need review.'}
+    finally:s.close()
+
+
 def render(model, output, viewer, seconds=8.0, fps=30, view='full', width=720, height=1080, motion='standard'):
     out = Path(output).resolve()
     if out.exists() and any(out.iterdir()):
@@ -145,11 +182,19 @@ def render(model, output, viewer, seconds=8.0, fps=30, view='full', width=720, h
         doc = json.loads(Path(motion).read_text()); pose_at = lambda t: motion_pose(doc, t)
     s = Session(model, viewer, width, height)
     try:
-        s.page.evaluate('v=>rig.camera(v)', VIEWS[view])
+        bounds=VIEWS[view]
+        if view=='full':
+            canvas=s.page.evaluate('()=>({width:rig.core.canvasinfo.CanvasWidth,height:rig.core.canvasinfo.CanvasHeight})')
+            w,h=canvas['width'],canvas['height'];bounds=[-.03*w,-.03*h,1.06*w,1.06*h]
+        s.page.evaluate('v=>rig.camera(v)', bounds)
         s.page.evaluate('rig.resetPhysics()')
+        known=set(s.page.evaluate('()=>rig.parameters.map(p=>p.id)'))
         hair = []; allvals = []
         for i in range(int(seconds*fps)):
-            r = s.page.evaluate('([p,dt])=>rig.draw(p,true,dt)', [pose_at(i/fps), 1/fps])
+            pose=pose_at(i/fps)
+            if motion=='standard':pose={k:v for k,v in pose.items() if k in known}
+            elif set(pose)-known:raise RuntimeError('Motion references unknown model parameters: '+', '.join(sorted(set(pose)-known)))
+            r = s.page.evaluate('([p,dt])=>rig.draw(p,true,dt)', [pose, 1/fps])
             if r['glError']:
                 raise RuntimeError('WebGL error while drawing')
             allvals.append(r['values'])
@@ -170,12 +215,14 @@ def render(model, output, viewer, seconds=8.0, fps=30, view='full', width=720, h
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('mode', choices=['render', 'inspect']); ap.add_argument('model'); ap.add_argument('output', nargs='?')
+    ap.add_argument('mode', choices=['render', 'inspect', 'domains']); ap.add_argument('model'); ap.add_argument('output', nargs='?')
     ap.add_argument('--viewer', required=True); ap.add_argument('--seconds', type=float, default=8); ap.add_argument('--fps', type=int, default=30)
     ap.add_argument('--motion', default='standard', help='standard, rest, or a motion3.json file'); ap.add_argument('--view', choices=list(VIEWS), default='full'); ap.add_argument('--width', type=int, default=720); ap.add_argument('--height', type=int, default=1080)
     a = ap.parse_args()
     if a.mode == 'inspect':
         print(json.dumps(inspect(a.model, a.viewer)))
+    elif a.mode == 'domains':
+        print(json.dumps(domains(a.model, a.viewer)))
     else:
         if not a.output:
             ap.error('render needs an output directory')

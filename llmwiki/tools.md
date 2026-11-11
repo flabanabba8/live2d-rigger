@@ -8,23 +8,9 @@ Begin creating a complete editable Live2D character from a brief and the user’
 
 Inputs: `name` (required), `brief` (required), `resources` (optional).
 
-## live2d_model_layer
+## New-character authoring tools
 
-Import one actual complete RGBA part after MAIN-session native image creation/review. Preserve hidden backing and neutral identity; do not treat interlocked portrait slices as complete parts.
-
-Inputs: `model_id` (required), `name` (required), `role` (required), `source_path` (required), `review_note` (required), `x` and `y` (optional, together: integer placement of a cropped part on the shared canvas). Names must be unique and full-canvas parts share one canvas size.
-
-## live2d_model_rig
-
-Save an actual authored rig source using the selected producer’s API. The active host authors this; no worker agent/model is launched.
-
-Inputs: `model_id` (required), `source` (required), `filename` (optional).
-
-## live2d_build_model
-
-Run the explicitly selected real native authoring toolchain on the project, requiring actual MOC3/model3 output. Trusted toolchain code executes; use only the resource/paths authorized for this production. Missing compiler stays blocked.
-
-Inputs: `model_id` (required), `command_argv` (required), `timeout_seconds` (optional).
+The exact schemas for `live2d_clone_model`, `live2d_remove_layer`, `live2d_model_layer`, `live2d_set_canvas`, `live2d_arrange_layers`, `live2d_place_layer`, `live2d_default_layout`, `live2d_register_layer`, `live2d_configure_umamo`, `live2d_model_rig`, `live2d_build_model`, `live2d_rebuild_prototype` and `live2d_check_rig_domains` are in [contracts.json](contracts.json). Imports require a reviewed complete-part attestation. The built-in adapter is experimental; its available controls and omissions are described in the [task guide](task-guide.md).
 
 ## live2d_render_model_motion
 

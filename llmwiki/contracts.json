@@ -26,7 +26,7 @@
     },
     {
       "name": "live2d_model_layer",
-      "description": "Import one actual complete RGBA part after MAIN-session native image creation/review. Preserve hidden backing and neutral identity; do not treat interlocked portrait slices as complete parts. Names are unique per model. Parts are either full-canvas PNGs sharing one canvas size, or cropped PNGs with integer x and y placement on that canvas.",
+      "description": "Import one independently painted complete part after MAIN-session native image creation/review; complete_part=true attests to complete hidden backing and refuses flat portrait slices. This is an attestation, not automated proof. Preserve hidden backing and neutral identity; do not treat interlocked portrait slices as complete parts. Names are unique per model. Parts are either full-canvas PNGs sharing one canvas size, or cropped PNGs with integer x and y placement on that canvas. For an opaque single-flat-colour image, supply key_color as [R,G,B] or [] to detect from corners; the tool performs a conservative cutout and returns a before/after preview. trim requires x and y. For a same-canvas reference edit set same_canvas_edit=true and reference_path to verify and correct high-confidence drift; low confidence preserves its coordinates and requests a nudge.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -50,6 +50,33 @@
           },
           "y": {
             "type": "integer"
+          },
+          "key_color": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "tolerance": {
+            "type": "integer"
+          },
+          "softness": {
+            "type": "integer"
+          },
+          "trim": {
+            "type": "boolean"
+          },
+          "complete_part": {
+            "type": "boolean"
+          },
+          "aligned_to_reference": {
+            "type": "boolean"
+          },
+          "same_canvas_edit": {
+            "type": "boolean"
+          },
+          "reference_path": {
+            "type": "string"
           }
         },
         "required": [
@@ -57,14 +84,15 @@
           "name",
           "role",
           "source_path",
-          "review_note"
+          "review_note",
+          "complete_part"
         ],
         "additionalProperties": false
       }
     },
     {
       "name": "live2d_model_rig",
-      "description": "Save an actual authored rig source using the selected producer’s API. The active host authors this; no worker agent/model is launched.",
+      "description": "Save authored rig source, omit source for static export, or pass source=prototype-roll for experimental head roll, basic torso sway/breathing and provisional blink/gaze and mouth opening when matching parts exist. Experimental back-hair physics is included when hair is present; neither route supplies XY turns or mouth form.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -79,15 +107,14 @@
           }
         },
         "required": [
-          "model_id",
-          "source"
+          "model_id"
         ],
         "additionalProperties": false
       }
     },
     {
       "name": "live2d_build_model",
-      "description": "Run the explicitly selected real native authoring toolchain on the project, requiring actual MOC3/model3 output. Trusted toolchain code executes; use only the resource/paths authorized for this production. Missing compiler stays blocked.",
+      "description": "Build with the configured Umamo toolchain when using the static layer export, or run an explicitly selected real native authoring command; requires actual MOC3/model3 output. Trusted toolchain code executes; use only the resource/paths authorized for this production. Missing compiler stays blocked.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -107,8 +134,7 @@
           }
         },
         "required": [
-          "model_id",
-          "command_argv"
+          "model_id"
         ],
         "additionalProperties": false
       }
@@ -229,7 +255,7 @@
     },
     {
       "name": "live2d_open_model",
-      "description": "Open an EXISTING Live2D model (the .model3.json the user already has, or the folder that holds it; a relative path is read from the current working folder) as a working copy inside a new project, so it can be inspected, changed and rendered. The original files are never modified. Use this when the user already has a character; use live2d_begin_model to create a new one.",
+      "description": "Open an EXISTING compiled runtime model only (not an editable layer project; use live2d_clone_model to copy a plugin-owned layer project). Open an EXISTING Live2D model (the .model3.json the user already has, or the folder that holds it; give a full absolute path) as a working copy inside a new project, so it can be inspected, changed and rendered. The original files are never modified. Use this when the user already has a character; use live2d_begin_model to create a new one.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -271,7 +297,7 @@
     },
     {
       "name": "live2d_adjust_physics",
-      "description": "Change how loose parts (hair, tentacles, skirt) swing on the WORKING COPY of an opened model: multipliers for output strength, how strongly head/body motion drives them, and follow-through (swing that continues after the head stops). Applied to the saved original each time, not compounded. restore_original undoes it.",
+      "description": "Change how loose parts (hair, tentacles, skirt) swing in an opened copy or built project: multipliers for output strength, how strongly head/body motion drives them, and follow-through (swing that continues after the head stops). Applied to the saved original each time, not compounded. restore_original undoes it.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -308,7 +334,7 @@
     },
     {
       "name": "live2d_write_motion",
-      "description": "Write a new motion (for example an idle that makes her breathe, sway, look around and blink) into the WORKING COPY of an opened model from plain curve descriptions, validated against the model’s real parameter ids and ranges, and register it as the Idle motion. tracks: list of {parameter, wave:sine (center, amplitude, cycles = whole number per loop, optional phase 0-1) | blink (at: [seconds], optional closed_seconds, open_value, closed_value) | keys ([[seconds, value], ...] eased)}. The structural check runs automatically.",
+      "description": "Write a new motion (for example an idle that makes her breathe, sway, look around and blink) into an opened copy or built project from plain curve descriptions, validated against the model’s real parameter ids and ranges, and register it as the Idle motion. tracks: list of {parameter, wave:sine (center, amplitude, cycles = whole number per loop, optional phase 0-1) | blink (at: [seconds], optional closed_seconds, open_value, closed_value) | keys ([[seconds, value], ...] eased)}. The structural check runs automatically.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -381,6 +407,239 @@
         "required": [
           "model_id",
           "label"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "live2d_set_canvas",
+      "description": "Set a shared neutral canvas without changing artwork; every placed part must fit.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "model_id": {
+            "type": "string"
+          },
+          "width": {
+            "type": "integer"
+          },
+          "height": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "model_id",
+          "width",
+          "height"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "live2d_place_layer",
+      "description": "Adjust layer placement, position, offset, move or scale an imported part on the shared canvas without resampling artwork; rebuild and render to apply.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "model_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "x": {
+            "type": "number"
+          },
+          "y": {
+            "type": "number"
+          },
+          "scale": {
+            "type": "number"
+          },
+          "scale_x": {
+            "type": "number"
+          },
+          "scale_y": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "model_id",
+          "name",
+          "x",
+          "y"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "live2d_check_rig_domains",
+      "description": "Evaluate each actual Core parameter at minimum, default and maximum, check finite geometry and report movement. This does not review intermediate poses or visual quality.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "model_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "model_id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "live2d_configure_umamo",
+      "description": "Configure an existing installed Java and Umamo toolchain using a user-supplied JSON file with compiler and runtime path arrays. No installation occurs.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "model_id": {
+            "type": "string"
+          },
+          "java": {
+            "type": "string"
+          },
+          "classpath_file": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "model_id",
+          "java",
+          "classpath_file"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "live2d_arrange_layers",
+      "description": "Arrange all imported complete layers back to front before building; list every layer name exactly once.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "model_id": {
+            "type": "string"
+          },
+          "names": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "model_id",
+          "names"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "live2d_default_layout",
+      "description": "Propose or apply rough role-based placement from the actual face bounds and requested head count when no reference is available. Inspect the composite; defaults are not visual acceptance.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "model_id": {
+            "type": "string"
+          },
+          "head_count": {
+            "type": "number"
+          },
+          "apply": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "model_id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "live2d_register_layer",
+      "description": "Propose position and scale by bounded image matching against a full-figure reference. Applies a candidate only above the strict confidence threshold; inspect the composite and give a placement nudge if confidence is low.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "model_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "reference_path": {
+            "type": "string"
+          },
+          "threshold": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "model_id",
+          "name",
+          "reference_path"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "live2d_rebuild_prototype",
+      "description": "Rebuild an experimental prototype using the current built-in authoring recipe after an observed geometry issue, preserving earlier builds. Render the same motion and compare; rebuilding does not guarantee a visual fix.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "model_id": {
+            "type": "string"
+          },
+          "timeout_seconds": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 900
+          }
+        },
+        "required": [
+          "model_id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "live2d_clone_model",
+      "description": "Copy a plugin-owned EDITABLE LAYER PROJECT including its source layers and evidence for a reversible repair; do not use live2d_open_model, which copies a compiled runtime only. The source project stays unchanged.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "model_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "model_id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "live2d_remove_layer",
+      "description": "Remove a layer from the active assembly without deleting its source PNG or previous builds; rebuild to apply.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "model_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "model_id",
+          "name"
         ],
         "additionalProperties": false
       }

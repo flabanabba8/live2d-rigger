@@ -94,3 +94,27 @@ class MotionTests(unittest.TestCase):
         self.assertTrue(self.app._motion_arg(model.parent,s,None).endswith('i.motion3.json'))
         with self.assertRaisesRegex(ValueError,'No motion called'):self.app._motion_arg(model.parent,json.loads(model.read_text()),'../x')
 if __name__=='__main__':unittest.main()
+
+class DomainCheckTests(unittest.TestCase):
+    def test_domain_check_detects_nonfinite_geometry(self):
+        from unittest.mock import patch
+        class Page:
+            def evaluate(self,script,arg=None):
+                if script=='rig.parameters':return [{'id':'ParamA','min':-1,'default':0,'max':1}]
+                if arg and arg.get('ParamA')==1:return [{'positions':[float('nan')],'opacity':1}]
+                return [{'positions':[0.0],'opacity':1}]
+        class Session:
+            page=Page();moc_sha256='fixture'
+            def __init__(self,*args):pass
+            def close(self):pass
+        with patch.object(corebridge,'Session',Session):
+            with self.assertRaisesRegex(RuntimeError,'Non-finite'):corebridge.domains('unused','unused')
+
+class BuiltMotionTests(unittest.TestCase):
+    setUp=ExistingModelTests.setUp
+    tearDown=ExistingModelTests.tearDown
+    def test_newly_built_project_can_write_motion(self):
+        from existing_fixture.production import save
+        i=self.app.open_existing('Test idol',str(self.model))['model_id'];p,data=self.app.load(i);data['origin']='created';save(p/'model-project.json',data)
+        result=self.app.write_motion(i,'TestBuilt',[{'parameter':'ParamAngleX','wave':'sine','center':0,'amplitude':5,'cycles':1}])
+        self.assertEqual(result['motion'],'TestBuilt')
