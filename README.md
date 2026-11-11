@@ -1,6 +1,6 @@
 # Live2D Rigger
 
-![Live2D Rigger: check the files behind the character](assets/thumbnail.jpg)
+![Live2D Rigger: describe a character and Hermes creates and rigs her](assets/thumbnail.jpg)
 
 Create and rig an editable Live2D character from a brief, through complete layered artwork, native compilation and motion review.
 
