@@ -30,6 +30,8 @@ class ExistingModelTests(unittest.TestCase):
         self.assertEqual(before,{q.name:sha(q) for q in self.model.parent.iterdir()})
     def test_open_accepts_the_folder(self):
         self.assertEqual(self.app.open_existing('x',str(self.model.parent))['phase'],'opened_existing')
+    def test_open_relative_name_error_tells_the_agent_what_to_do(self):
+        with self.assertRaisesRegex(ValueError,'FULL path'):self.app.open_existing('x','no-such-folder')
     def test_open_refuses_bad_input(self):
         with self.assertRaisesRegex(ValueError,'model3.json'):self.app.open_existing('x',str(self.root/'nope.txt'))
         (self.model.parent/'t.png').unlink()

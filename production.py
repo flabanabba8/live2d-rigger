@@ -107,7 +107,7 @@ class Production:
             found=sorted(source.glob('*.model3.json'))
             if len(found)!=1:raise ValueError('Give the .model3.json file, or a folder holding exactly one')
             source=found[0]
-        if not source.name.endswith('.model3.json')or not source.is_file()or source.is_symlink():raise ValueError('Give the path of an existing Cubism .model3.json file')
+        if not source.name.endswith('.model3.json')or not source.is_file()or source.is_symlink():raise ValueError('Give the FULL path (starting with /) of an existing Cubism .model3.json file, or of a folder holding exactly one; a relative name like coral-idol is not resolved from here, so find the folder with the terminal first (pwd) and pass the absolute path')
         report=inspect_resources(str(source))
         if report['issues']or any(x['status']!='present'for x in report['resources']):raise ValueError('The model has missing or unsafe resources; nothing was copied')
         folder=source.parent.resolve();files=[x for x in folder.rglob('*')if x.is_file()]
