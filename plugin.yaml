@@ -1,5 +1,5 @@
 name: live2d-rigger
-version: "0.5.0"
+version: "0.5.1"
 description: "Create and rig editable Live2D characters from a brief, using native image tools and a selected real authoring/SDK toolchain, with motion review. Also opens a character you already have, shows how she is put together, changes how her hair or skirt swings on a copy, and renders the same motion before and after."
 author: "Live2D Rigger contributors"
 license: GPL-3.0-or-later

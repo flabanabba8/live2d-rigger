@@ -57,14 +57,14 @@ class ExistingModelTests(unittest.TestCase):
         i=self.app.open_existing('Test idol',str(self.model))['model_id']
         with self.assertRaisesRegex(ValueError,'not ready'):self.app.render_clip(i,'before')
         def fake(p,argv,out,timeout):
-            self.assertIn('corebridge.py',argv[1]);self.assertEqual(argv[2],'render');self.assertTrue(argv[3].startswith('{project}/'));self.assertTrue((p/argv[3][len('{project}/'):]).is_file());subprocess.run(['ffmpeg','-v','error','-f','lavfi','-i','color=c=black:s=64x64:d=1:r=10','-pix_fmt','yuv420p',str(out/'motion.mp4')],check=True);(out/'report.json').write_text(json.dumps({'measured':{'blinks':2}}))
+            self.assertIn('corebridge.py',argv[1]);self.assertEqual(argv[2],'render');self.assertTrue(argv[3].startswith('{project}/'));self.assertTrue((p/argv[3][len('{project}/'):]).is_file());subprocess.run(['ffmpeg','-v','error','-f','lavfi','-i','color=c=black:s=64x64:d=1:r=10','-pix_fmt','yuv420p',str(out/'motion.mp4')],check=True);(out/'report.json').write_text(json.dumps({'measured':{'eye_close_parameter_crossings':2}}))
         ready={'ready':True,'missing':[],'viewer_dir':'/v','python':sys.executable}
         with patch.object(self.app,'renderer',return_value=ready),patch.object(self.app,'command',side_effect=fake):
             r=self.app.render_clip(i,'before');self.app.adjust_physics(i,output_scale=2);r2=self.app.render_clip(i,'after')
-        clips=self.app.status(i)['clips'];self.assertEqual([c['label'] for c in clips],['before','after']);self.assertNotEqual(clips[0]['physics_sha256'],clips[1]['physics_sha256']);self.assertTrue(r['videos']);self.assertEqual(r['measured_movement'],{'blinks':2})
+        clips=self.app.status(i)['clips'];self.assertEqual([c['label'] for c in clips],['before','after']);self.assertNotEqual(clips[0]['physics_sha256'],clips[1]['physics_sha256']);self.assertTrue(r['videos']);self.assertEqual(r['measured_movement'],{'eye_close_parameter_crossings':2});self.assertIn('not proof of visible motion',r['measurement_notice']);self.assertIn('inspect the frames',r['measurement_notice'])
     def test_measure_reports_real_movement(self):
         frames=[{'ParamAngleX':a,'ParamEyeLOpen':o,'ParamEyeROpen':o,'ParamHairL1':h}for a,o,h in((0,1,0),(10,1,.2),(-12,0,-.5),(0,1,0),(5,0,.1),(0,1,0))]
-        m=corebridge.measure(frames,30);self.assertEqual(m['head_turn_left_right_degrees'],[-12,10]);self.assertEqual(m['blinks'],2);self.assertEqual(m['hair_swing_strength_0_to_1'],.5);self.assertNotIn('skirt_swing_0_to_1',m)
+        m=corebridge.measure(frames,30);self.assertEqual(m['head_turn_left_right_degrees'],[-12,10]);self.assertEqual(m['eye_close_parameter_crossings'],2);self.assertEqual(m['hair_swing_strength_0_to_1'],.5);self.assertNotIn('skirt_swing_0_to_1',m);self.assertNotIn('eye_close_parameter_crossings',corebridge.measure([{'ParamAngleX':0}],30))
     def test_tools_registered(self):
         for n in('live2d_open_model','live2d_inspect_model','live2d_adjust_physics','live2d_render_clip'):self.assertIn(n,TOOLS)
     def test_standard_pose_loops_and_is_deterministic(self):

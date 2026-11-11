@@ -1,6 +1,6 @@
 {
   "curated": "2026-11-10",
-  "status": "Version 0.5.0 adds a tested experimental Umamo layer-to-prototype route and local Core review; the built-in rig remains incomplete and visual acceptance is not implied. Official samples remain optional and no proprietary SDK or character art is bundled.",
+  "status": "Version 0.5.1 retains a tested experimental Umamo layer-to-prototype route and local Core review; the built-in rig remains incomplete and visual acceptance is not implied. Official samples remain optional and no proprietary SDK or character art is bundled.",
   "sources": [
     {
       "package_path": "README.md",

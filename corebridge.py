@@ -64,17 +64,17 @@ def motion_pose(motion, t):
 
 
 def measure(frames, fps):
-    """Plain facts about what actually moved in the rendered frames (parameter values as evaluated, physics included)."""
+    """Summarize evaluated Core parameters; these values do not prove visible motion."""
     def rng(*ids):
         vals = [f[i] for f in frames for i in ids if i in f]
         return [round(min(vals), 2), round(max(vals), 2)] if vals else None
     def swing(*ids):
         vals = [abs(f[i]) for f in frames for i in ids if i in f]
         return round(max(vals), 2) if vals else None
-    eye = [min(f.get('ParamEyeLOpen', 1), f.get('ParamEyeROpen', 1)) for f in frames]
-    blinks = sum(1 for a, b in zip(eye, eye[1:]) if a >= .5 > b)
+    eye = [min(f.get('ParamEyeLOpen', 1), f.get('ParamEyeROpen', 1)) for f in frames if 'ParamEyeLOpen' in f or 'ParamEyeROpen' in f]
+    blinks = sum(1 for a, b in zip(eye, eye[1:]) if a >= .5 > b) if eye else None
     keep = {'seconds': round(len(frames)/fps, 1), 'head_turn_left_right_degrees': rng('ParamAngleX'), 'head_nod_degrees': rng('ParamAngleY'), 'head_tilt_degrees': rng('ParamAngleZ'),
-            'body_sway_degrees': rng('ParamBodyAngleZ', 'ParamBodyAngleX'), 'breathing_0_to_1': rng('ParamBreath'), 'eyes_look_left_right': rng('ParamEyeBallX'), 'blinks': blinks,
+            'body_sway_degrees': rng('ParamBodyAngleZ', 'ParamBodyAngleX'), 'breathing_0_to_1': rng('ParamBreath'), 'eyes_look_left_right': rng('ParamEyeBallX'), 'eye_close_parameter_crossings': blinks,
             'hair_swing_strength_0_to_1': swing('ParamHairBack', 'ParamHairL1', 'ParamHairL2', 'ParamHairL3', 'ParamHairR1', 'ParamHairR2', 'ParamHairR3', 'ParamHairFront'), 'skirt_swing_0_to_1': swing('ParamSkirt')}
     return {k: v for k, v in keep.items() if v is not None}
 
@@ -203,6 +203,7 @@ def render(model, output, viewer, seconds=8.0, fps=30, view='full', width=720, h
         info = dict(motion=Path(motion).name if motion not in ('standard', 'rest') else motion, coreVersion=s.page.evaluate('rig.coreVersion'), mocSha256=s.moc_sha256, frames=len(hair), fps=fps, view=view,
                     hair_parameter_range={k: [round(min(h[k] for h in hair), 3), round(max(h[k] for h in hair), 3)] for k in (hair[0] if hair else {})})
         info['measured'] = measure(allvals, fps)
+        info['measurement_notice'] = 'Evaluated parameter values, not proof of visible movement. Eye-close crossings can occur without a visible blink; inspect the frames.'
     finally:
         s.close()
     subprocess.run(['ffmpeg', '-v', 'error', '-framerate', str(fps), '-i', str(frames/'%04d.png'), '-vf', 'pad=ceil(iw/2)*2:ceil(ih/2)*2:color=0x26343a,format=yuv420p',
