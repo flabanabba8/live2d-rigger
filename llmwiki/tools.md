@@ -1,0 +1,95 @@
+# Actual tool contracts
+
+Registered source schemas; registration alone does not establish live backend readiness.
+
+## live2d_begin_model
+
+Begin creating a complete editable Live2D character from a brief and the user’s actual resources. Artwork, rigging, native compilation and motion review are production stages; inspectors remain diagnostics.
+
+Inputs: `name` (required), `brief` (required), `resources` (optional).
+
+## live2d_model_layer
+
+Import one actual complete RGBA part after MAIN-session native image creation/review. Preserve hidden backing and neutral identity; do not treat interlocked portrait slices as complete parts.
+
+Inputs: `model_id` (required), `name` (required), `role` (required), `source_path` (required), `review_note` (required), `x` and `y` (optional, together: integer placement of a cropped part on the shared canvas). Names must be unique and full-canvas parts share one canvas size.
+
+## live2d_model_rig
+
+Save an actual authored rig source using the selected producer’s API. The active host authors this; no worker agent/model is launched.
+
+Inputs: `model_id` (required), `source` (required), `filename` (optional).
+
+## live2d_build_model
+
+Run the explicitly selected real native authoring toolchain on the project, requiring actual MOC3/model3 output. Trusted toolchain code executes; use only the resource/paths authorized for this production. Missing compiler stays blocked.
+
+Inputs: `model_id` (required), `command_argv` (required), `timeout_seconds` (optional).
+
+## live2d_render_model_motion
+
+Render the built model through a selected actual SDK/Core renderer into a real motion MP4 for MAIN-session review. No physical camera/tracker/VTS integration is part of this operation.
+
+Inputs: `model_id` (required), `command_argv` (required), `timeout_seconds` (optional).
+
+## live2d_model_status
+
+Read actual model production layers/rig/compiled package/motion state, never a fabricated ready flag.
+
+Inputs: `model_id` (required).
+
+## live2d_open_model
+
+Open an EXISTING Live2D model (the .model3.json the user already has, or the folder that holds it; a relative path is read from the current working folder) as a working copy inside a new project, so it can be inspected, changed and rendered. The original files are never modified. Use this when the user already has a character; use live2d_begin_model to create a new one.
+
+Inputs: `name` (required), `model_path` (required), `viewer_dir` (optional), `render_python` (optional).
+
+## live2d_inspect_model
+
+Describe an opened model in plain terms: controls, expressions, motions, physics groups (what drives what, how strongly) and, when the Cubism renderer is available, the separate parts and drawable pieces and each control range.
+
+Inputs: `model_id` (required).
+
+## live2d_adjust_physics
+
+Change how loose parts (hair, tentacles, skirt) swing on the WORKING COPY of an opened model: multipliers for output strength, how strongly head/body motion drives them, and follow-through (swing that continues after the head stops). Applied to the saved original each time, not compounded. restore_original undoes it.
+
+Inputs: `model_id` (required), `output_scale` (optional), `input_weight` (optional), `follow_through` (optional), `groups` (optional), `note` (optional), `restore_original` (optional).
+
+
+## live2d_write_motion
+
+Write a new motion (for example an idle that makes her breathe, sway, look around and blink) into the WORKING COPY of an opened model from plain curve descriptions, validated against the model’s real parameter ids and ranges, and register it as the Idle motion. tracks: list of {parameter, wave:sine (center, amplitude, cycles = whole number per loop, optional phase 0-1) | blink (at: [seconds], optional closed_seconds, open_value, closed_value) | keys ([[seconds, value], ...] eased)}. The structural check runs automatically.
+
+Inputs: `model_id` (required), `name` (required), `tracks` (required), `seconds` (optional), `fps` (optional), `as_idle` (optional), `note` (optional).
+
+## live2d_render_clip
+
+Render the opened or built model moving through the official Cubism Core (physics running) into a labelled motion clip. motion: a motion name from the model or one you wrote; left out it plays the model’s own Idle motion (how she moves now), or standard if it has none; standard = test sequence (head turns left and right, blinks, small body sway); rest = no motion. Same camera and length every time so before/after clips compare directly. Look at the contact sheet in the main session.
+
+Inputs: `model_id` (required), `label` (required), `motion` (optional), `seconds` (optional), `view` (optional), `width` (optional), `height` (optional).
+
+## live2d_inspect_resources
+
+Inspect model3.json references for missing or unsafe model, texture, physics, expression and motion resources. This does not inspect or render the rig.
+
+Inputs: `model_path` (required).
+
+## live2d_check_motion
+
+Check Cubism motion curve structure and compare targets with supplementary display-info IDs without rendering.
+
+Inputs: `cdi_path` (required), `motion_path` (required).
+
+
+## live2d_reference_samples
+
+List the official free Live2D samples known to this plugin (Hiyori, Haru, Mark-kun, Mao, Ren), whether each is present in the plugin data folder, and the licence links. With `sample_id`, summarise a present sample's parameters, parts, physics, expressions and motion groups from its model3/cdi3/physics3/pose3 JSON. Read-only.
+
+Inputs: `sample_id` (optional).
+
+## live2d_fetch_reference_sample
+
+Download one official sample zip from cubism.live2d.com into this plugin's data folder as a structural reference. Refuses unless `accept_licence` is true (the user was shown what is downloaded and the licence links and agreed). Reuses a present sample; rejects unsafe archive paths and archives with no model3.json. Network side effect: one HTTPS download from Live2D's host.
+
+Inputs: `sample_id` (required), `accept_licence` (required).

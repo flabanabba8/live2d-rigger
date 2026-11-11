@@ -1,0 +1,389 @@
+{
+  "status": "actual registered source schemas; handlers not executed for schema capture",
+  "tools": [
+    {
+      "name": "live2d_begin_model",
+      "description": "Begin creating a complete editable Live2D character from a brief and the user’s actual resources. Artwork, rigging, native compilation and motion review are production stages; inspectors remain diagnostics.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "brief": {
+            "type": "string"
+          },
+          "resources": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "name",
+          "brief"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "live2d_model_layer",
+      "description": "Import one actual complete RGBA part after MAIN-session native image creation/review. Preserve hidden backing and neutral identity; do not treat interlocked portrait slices as complete parts. Names are unique per model. Parts are either full-canvas PNGs sharing one canvas size, or cropped PNGs with integer x and y placement on that canvas.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "model_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "source_path": {
+            "type": "string"
+          },
+          "review_note": {
+            "type": "string"
+          },
+          "x": {
+            "type": "integer"
+          },
+          "y": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "model_id",
+          "name",
+          "role",
+          "source_path",
+          "review_note"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "live2d_model_rig",
+      "description": "Save an actual authored rig source using the selected producer’s API. The active host authors this; no worker agent/model is launched.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "model_id": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "filename": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "model_id",
+          "source"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "live2d_build_model",
+      "description": "Run the explicitly selected real native authoring toolchain on the project, requiring actual MOC3/model3 output. Trusted toolchain code executes; use only the resource/paths authorized for this production. Missing compiler stays blocked.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "model_id": {
+            "type": "string"
+          },
+          "command_argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "timeout_seconds": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 900
+          }
+        },
+        "required": [
+          "model_id",
+          "command_argv"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "live2d_render_model_motion",
+      "description": "Render the built model through a selected actual SDK/Core renderer into a real motion MP4 for MAIN-session review. No physical camera/tracker/VTS integration is part of this operation.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "model_id": {
+            "type": "string"
+          },
+          "command_argv": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "timeout_seconds": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 900
+          }
+        },
+        "required": [
+          "model_id",
+          "command_argv"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "live2d_model_status",
+      "description": "Read actual model production layers/rig/compiled package/motion state, never a fabricated ready flag.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "model_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "model_id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "live2d_reference_samples",
+      "description": "List the official free Live2D sample models this plugin knows (Hiyori, Haru, Mark, Mao, Ren) with their official pages, whether each is already in the plugin's data folder, and the licence links. With sample_id, summarise that present sample's structure (parameters, parts, physics, expressions, motions) as a reference.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "sample_id": {
+            "type": "string"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "live2d_fetch_reference_sample",
+      "description": "Download one official free Live2D sample from Live2D's own sample-data host into this plugin's data folder, only as a structural reference. Requires accept_licence=true, which means you showed the user what is being downloaded and the licence links and the user agreed. Reuses a present sample.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "sample_id": {
+            "type": "string"
+          },
+          "accept_licence": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "sample_id",
+          "accept_licence"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "live2d_inspect_resources",
+      "description": "Inspect model3.json references for missing or unsafe model, texture, physics, expression and motion resources. This does not inspect or render the rig.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "model_path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "model_path"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "live2d_check_motion",
+      "description": "Check Cubism motion curve structure and compare targets with supplementary display-info IDs without rendering.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "cdi_path": {
+            "type": "string"
+          },
+          "motion_path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "cdi_path",
+          "motion_path"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "live2d_open_model",
+      "description": "Open an EXISTING Live2D model (the .model3.json the user already has, or the folder that holds it; a relative path is read from the current working folder) as a working copy inside a new project, so it can be inspected, changed and rendered. The original files are never modified. Use this when the user already has a character; use live2d_begin_model to create a new one.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "model_path": {
+            "type": "string"
+          },
+          "viewer_dir": {
+            "type": "string"
+          },
+          "render_python": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "model_path"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "live2d_inspect_model",
+      "description": "Describe an opened model in plain terms: controls, expressions, motions, physics groups (what drives what, how strongly) and, when the Cubism renderer is available, the separate parts and drawable pieces and each control range.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "model_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "model_id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "live2d_adjust_physics",
+      "description": "Change how loose parts (hair, tentacles, skirt) swing on the WORKING COPY of an opened model: multipliers for output strength, how strongly head/body motion drives them, and follow-through (swing that continues after the head stops). Applied to the saved original each time, not compounded. restore_original undoes it.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "model_id": {
+            "type": "string"
+          },
+          "output_scale": {
+            "type": "number"
+          },
+          "input_weight": {
+            "type": "number"
+          },
+          "follow_through": {
+            "type": "number"
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "note": {
+            "type": "string"
+          },
+          "restore_original": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "model_id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "live2d_write_motion",
+      "description": "Write a new motion (for example an idle that makes her breathe, sway, look around and blink) into the WORKING COPY of an opened model from plain curve descriptions, validated against the model’s real parameter ids and ranges, and register it as the Idle motion. tracks: list of {parameter, wave:sine (center, amplitude, cycles = whole number per loop, optional phase 0-1) | blink (at: [seconds], optional closed_seconds, open_value, closed_value) | keys ([[seconds, value], ...] eased)}. The structural check runs automatically.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "model_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "tracks": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "seconds": {
+            "type": "number"
+          },
+          "fps": {
+            "type": "integer"
+          },
+          "as_idle": {
+            "type": "boolean"
+          },
+          "note": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "model_id",
+          "name",
+          "tracks"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "live2d_render_clip",
+      "description": "Render the opened or built model moving through the official Cubism Core (physics running) into a labelled motion clip. motion: a motion name from the model or one you wrote; left out it plays the model’s own Idle motion (how she moves now), or standard if it has none; standard = test sequence (head turns left and right, blinks, small body sway); rest = no motion. Same camera and length every time so before/after clips compare directly. Look at the contact sheet in the main session.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "model_id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "motion": {
+            "type": "string"
+          },
+          "seconds": {
+            "type": "number"
+          },
+          "view": {
+            "type": "string",
+            "enum": [
+              "full",
+              "upper",
+              "head"
+            ]
+          },
+          "width": {
+            "type": "integer"
+          },
+          "height": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "model_id",
+          "label"
+        ],
+        "additionalProperties": false
+      }
+    }
+  ]
+}

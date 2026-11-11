@@ -1,0 +1,79 @@
+{
+  "curated": "2026-11-10",
+  "status": "source reviewed; version 0.4.0 adds open-existing-model, plain-words inspection, physics adjustment, motion writing and a Core clip renderer (offline tests plus one live render on this machine); version 0.3.0 adds reference-sample tools verified offline with a fake downloader; vendor facts checked 2026-11-10; no live sample download",
+  "sources": [
+    {
+      "package_path": "README.md",
+      "sha256": "95cf1b5553078b66def9f2f6bc8fa3b15a2d2dd51ee28969055a17758ed53f4a"
+    },
+    {
+      "package_path": "VERIFICATION.md",
+      "sha256": "58a33162413cb92c2ed4af142fd447a23d196c29b675603ac104a9ebda691a2c"
+    },
+    {
+      "package_path": "__init__.py",
+      "sha256": "3e1dd5580e08f8dbe5d1716ed23c9e30f42752d322a301c5bb2dad9716df2b70"
+    },
+    {
+      "package_path": "core.py",
+      "sha256": "9aed4d702e1fbff5a40507ed2e92cd349d4264b7bcc7434e4228d4a78be394ab"
+    },
+    {
+      "package_path": "llmwiki/references.md",
+      "sha256": "840670c31486a4015d3be91a3af80541fa71c4383faa9f872c4b4df2ca5352ce"
+    },
+    {
+      "package_path": "motion.py",
+      "sha256": "473c00e28b5cd89eaa582d9c7c0d7407e96303499bd1ab242bd02555891ef81b"
+    },
+    {
+      "package_path": "plugin.yaml",
+      "sha256": "430a6f485491f53b7f74f30256cd3e8095cdcdcd5203d2e72190823509fab97e"
+    },
+    {
+      "package_path": "production.py",
+      "sha256": "fedf10a30f0b12883666ff6043be5fdf82bc109838ca0e4456841743105c4828"
+    },
+    {
+      "package_path": "references.py",
+      "sha256": "0d3f1ff7152e2918f48b96e454fc303e0c513e6426557bba0ea96dcf283d6a2a"
+    },
+    {
+      "package_path": "skills/live2d-rigger/SKILL.md",
+      "sha256": "198971664a661d2d4cde1a8ef44901cf70dad8f7f676a2b387d57f28b4d54c60"
+    },
+    {
+      "package_path": "tests/test_motion.py",
+      "sha256": "9e921f1411ecc7bea3d3ace14161402c4f1e734bdb52af573820353455d5938c"
+    },
+    {
+      "package_path": "tests/test_production.py",
+      "sha256": "4d407d1c84aedc23206d46d9ab00b7233bfb28c6220be1f1f58ef6fd4e4aadbb"
+    },
+    {
+      "package_path": "tests/test_references.py",
+      "sha256": "3216e10026704dee6f35e3ebe89ceb8cf0d7a9288bd3af017727237b49899151"
+    },
+    {
+      "package_path": "tests/test_rig.py",
+      "sha256": "11ecb84231964e1ac56e56544ddec87ad51ad96bb02f4b49bb4ec4ee800add56"
+    }
+  ],
+  "quality_review": {
+    "date": "2026-11-10",
+    "method": "main-session source/contract review; actual registration capture; focused offline/mocked tests recorded separately",
+    "scope": [
+      "setup choices",
+      "worked task flow",
+      "failure diagnosis",
+      "acceptance limits",
+      "schema alignment"
+    ],
+    "live_scope": "No new production pipeline, model build, paid speech, install or publication. ModLab UM/REA help calls exercised actual installed CLIs."
+  },
+  "privacy_scope": {
+    "credentials_read": false,
+    "selected_installed_runtime_source_inspected_read_only": true,
+    "private_installs_modified": false
+  }
+}
