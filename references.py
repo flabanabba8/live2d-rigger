@@ -98,7 +98,7 @@ class References:
         models = self._models(sample_id) if sample_id in CATALOG else []
         if not models: raise ValueError('Sample not present; fetch it first (with the user\'s licence agreement)')
         model = models[0]; folder = model.parent
-        resources = inspect_resources(str(model))
+        resources = inspect_resources(str(model), own_root=self.root)
         refs = _json(model).get('FileReferences', {})
         out = {'sample_id': sample_id, 'resource_check': {'issues': resources['issues'], 'resources': len(resources['resources'])},
                'expressions': [Path(e.get('File', '')).name for e in refs.get('Expressions', []) if isinstance(e, dict)][:CAP],

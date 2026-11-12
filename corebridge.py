@@ -16,6 +16,11 @@ from pathlib import Path
 VIEWS = {'full': [-30, -30, 1040, 1700], 'upper': [60, 0, 840, 1260], 'head': [160, -20, 680, 980]}
 
 
+def _clean_env():
+    """No provider keys or other secrets from the host for the ffmpeg calls. Defined before main() runs when the file is started as a script."""
+    return {k: v for k, v in os.environ.items() if k in ('PATH', 'HOME', 'LANG', 'LC_ALL', 'TMPDIR')}
+
+
 def ease(t, a, b):
     u = min(1.0, max(0.0, (t-a)/(b-a)))
     return u*u*(3-2*u)
@@ -233,6 +238,3 @@ def main():
 if __name__ == '__main__':
     main()
 
-
-def _clean_env():
-    return {k: v for k, v in os.environ.items() if k in ('PATH', 'HOME', 'LANG', 'LC_ALL', 'TMPDIR')}

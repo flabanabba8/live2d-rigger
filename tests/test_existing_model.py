@@ -97,6 +97,16 @@ class MotionTests(unittest.TestCase):
         # the model-facing tool still refuses a private path, and cannot set the internal root
         from existing_fixture import motion
         with self.assertRaisesRegex(ValueError, 'Private paths'): motion.read_json(str(self.root / '.hermes' / 'x.cdi3.json'), '.cdi3.json')
+    def test_a_model_built_inside_the_plugin_data_folder_under_dot_hermes_passes_its_own_resource_check(self):
+        """Found through Hermes: after compiling, the plugin inspected its own output under .hermes and refused it as a private path."""
+        from existing_fixture import core
+        data = self.root / '.hermes' / 'profiles' / 'p' / 'plugin-data'; data.mkdir(parents=True)
+        mine = data / 'model-projects' / 'x' / 'build'; mine.mkdir(parents=True)
+        for f in self.model.parent.iterdir():
+            if f.is_file(): (mine / f.name).write_bytes(f.read_bytes())
+        copy = mine / self.model.name
+        with self.assertRaisesRegex(ValueError, 'Private paths'): core.inspect_resources(str(copy))
+        self.assertEqual(core.inspect_resources(str(copy), own_root=data)['issues'], [])
     def test_motion_names_resolve_for_rendering(self):
         i=self.app.open_existing('Test idol',str(self.model))['model_id'];p,data=self.app.load(i);model=p/data['model_path']
         self.assertEqual(self.app._motion_arg(model.parent,json.loads(model.read_text()),None),'standard');self.assertEqual(self.app._motion_arg(model.parent,json.loads(model.read_text()),'rest'),'rest')

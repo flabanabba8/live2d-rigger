@@ -23,12 +23,21 @@ def stable_bytes(path, limit):
     return raw
 
 
-def inspect_resources(model_path):
+def _private(path, own_root=None):
+    """True when the path runs through a private folder. The plugin's OWN project folder (internal calls only) may sit under .hermes, so only the part below it counts."""
+    parts = path.parts
+    if own_root is not None:
+        try: parts = path.resolve().relative_to(Path(own_root).resolve()).parts
+        except (ValueError, OSError): pass
+    return any(x.casefold() in PRIVATE for x in parts)
+
+
+def inspect_resources(model_path, own_root=None):
     p = Path(model_path).expanduser()
-    if p.is_symlink() or any(x.casefold() in PRIVATE for x in p.parts):
+    if p.is_symlink() or _private(p, own_root):
         raise ValueError('Private paths and symlink inputs are unsupported')
     p = p.resolve(strict=True)
-    if any(x.casefold() in PRIVATE for x in p.parts) or not p.is_file() or not p.name.endswith('.model3.json'):
+    if _private(p, own_root) or not p.is_file() or not p.name.endswith('.model3.json'):
         raise ValueError('Select a model3.json file outside private configuration')
     raw = stable_bytes(p, 4 * 1024**2)
     try:

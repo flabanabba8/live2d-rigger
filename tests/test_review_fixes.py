@@ -99,5 +99,16 @@ class CleanEnvironment(unittest.TestCase):
         self.assertEqual(missing, [])
 
 
+class ScriptsAreDefinedBeforeTheyRun(unittest.TestCase):
+    def test_every_helper_in_a_script_started_by_the_plugin_is_defined_before_its_main_guard(self):
+        """Found through Hermes: corebridge.py defined _clean_env after `if __name__ == '__main__': main()`, so every Core render died with a NameError."""
+        for name in ('corebridge.py', 'umamo_adapter.py'):
+            tree = ast.parse((ROOT / name).read_text())
+            guard = [i for i, n in enumerate(tree.body) if isinstance(n, ast.If) and 'main' in ast.dump(n.test)]
+            if not guard: continue
+            late = [n.name for n in tree.body[guard[0] + 1:] if isinstance(n, (ast.FunctionDef, ast.ClassDef))]
+            self.assertEqual(late, [], name)
+
+
 if __name__ == '__main__':
     unittest.main()

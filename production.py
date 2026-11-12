@@ -258,7 +258,7 @@ class Production:
         models=list(output.rglob('*.model3.json'))
         if len(models)!=1:raise ValueError('The native producer must emit one actual Cubism model3.json package; no model placeholder accepted')
         if models[0].is_symlink()or not models[0].resolve().is_relative_to(output.resolve()):raise ValueError('Native model package must remain inside its build directory')
-        report=inspect_resources(str(models[0]))
+        report=inspect_resources(str(models[0]),own_root=self.root)
         if report['issues']or any(x['status']!='present'for x in report['resources']):raise ValueError('Native model package has unsafe or missing resources; no compiled success claimed')
         settings=json.loads(models[0].read_text());moc=models[0].parent/settings['FileReferences']['Moc']
         with moc.open('rb')as f:magic=f.read(4)
@@ -458,6 +458,7 @@ class Production:
     def render_clip(self,model_id,label,seconds=8,view='full',width=720,height=1080,motion=None):
         p,data=self.load(model_id)
         if view not in('full','upper','head')or type(seconds)not in(int,float)or not 2<=seconds<=20 or not all(type(v)is int and 240<=v<=2160 for v in(width,height)):raise ValueError('view is full, upper or head; seconds 2-20; sizes 240-2160')
+        if not data.get('model_path'):raise ValueError('Open an existing model or build a model first')
         model=p/data['model_path']
         if data.get('rig_file')=='builtin:static-layers':
             if motion not in (None,'rest'):raise ValueError('The static layer export has no animation controls; render it with motion=rest')

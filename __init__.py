@@ -43,7 +43,7 @@ def invoke(name, args, ctx=None):
         if name in TOOLS:
             from plugins.plugin_storage import plugin_data_dir
             return json.dumps(getattr(Production(plugin_data_dir('live2d-rigger'),owner_settings(ctx)),TOOLS[name][3])(**args))
-        if name == 'live2d_check_motion' and 'own_root' in args: raise ValueError('own_root is not a tool argument')
+        if name in ('live2d_check_motion', 'live2d_inspect_resources') and 'own_root' in args: raise ValueError('own_root is not a tool argument')
         return json.dumps((check_motion if name == 'live2d_check_motion' else inspect_resources)(**args))
     except (ValueError, TypeError, OSError, UnicodeError, KeyError, RuntimeError, subprocess.TimeoutExpired) as exc:
         return json.dumps({'error': str(exc)})

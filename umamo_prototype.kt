@@ -10,7 +10,6 @@ import org.umamo.runtime.model.*
 import org.umamo.format.moc3.moc.MocVersion
 import org.umamo.interop.moc3.Moc3Sidecars
 import org.umamo.interop.describeExportNotice
-import org.umamo.render.canvasToParentSpaceFor
 
 // Experimental head-roll prototype. No XY, expressions or physics are authored.
 fun main(args: Array<String>) {
@@ -99,14 +98,14 @@ fun main(args: Array<String>) {
             val positions=ys.flatMap { rowY -> listOf(x,rowY,x+w,rowY) }.toFloatArray()
             val uv=ys.flatMap { rowY -> val v=(rowY-y)/h;listOf(0f,v,1f,v) }.toFloatArray()
             val triangles=mutableListOf<Int>();for(j in 0 until ys.size-1) {val a=j*2;triangles.addAll(listOf(a,a+1,a+3,a,a+3,a+2))}
-            DrawableMesh(positions,uv,triangles.toIntArray())
+            DrawableMesh.withLocalEqualToCanvas(positions,uv,triangles.toIntArray())
         } else if("eye_combined" in item.getValue("name").jsonPrimitive.content.lowercase()) {
             val ext=box(item);val left=ext[0]-ext[3]/2;val top=ext[1]-ext[4]/2;val cols=12;val lines=12
             val positions=mutableListOf<Float>();val uv=mutableListOf<Float>();val triangles=mutableListOf<Int>()
             for(j in 0..lines) for(k in 0..cols) {val px=left+ext[3]*k/cols;val py=top+ext[4]*j/lines;positions.addAll(listOf(px,py));uv.addAll(listOf((px-x)/w,(py-y)/h))}
             for(j in 0 until lines) for(k in 0 until cols) {val a=j*(cols+1)+k;triangles.addAll(listOf(a,a+1,a+cols+2,a,a+cols+2,a+cols+1))}
-            DrawableMesh(positions.toFloatArray(),uv.toFloatArray(),triangles.toIntArray())
-        } else DrawableMesh(floatArrayOf(x,y,x+w,y,x+w,y+h,x,y+h), floatArrayOf(0f,0f,1f,0f,1f,1f,0f,1f), intArrayOf(0,1,2,0,2,3))
+            DrawableMesh.withLocalEqualToCanvas(positions.toFloatArray(),uv.toFloatArray(),triangles.toIntArray())
+        } else DrawableMesh.withLocalEqualToCanvas(floatArrayOf(x,y,x+w,y,x+w,y+h,x,y+h), floatArrayOf(0f,0f,1f,0f,1f,1f,0f,1f), intArrayOf(0,1,2,0,2,3))
         val id = "Part" + i
         val role=(item.getValue("name").jsonPrimitive.content+" "+item.getValue("role").jsonPrimitive.content).lowercase()
         val head=listOf("head","face","hair","fringe","bang","eye","iris","brow","nose","mouth","ear").any { it in role }
@@ -195,7 +194,7 @@ fun main(args: Array<String>) {
         val path = row.jsonObject.getValue("path").jsonPrimitive.content
         Moc3Sidecars.AtlasPage("textures/part${i}.png", File(project, path).readBytes())
     }
-    val bundle = Moc3Sidecars.bundle(model, "Model", version=MocVersion.V40, pages=pages, canvasToParentSpace=canvasToParentSpaceFor(model))
+    val bundle = Moc3Sidecars.bundle(model, "Model", version=MocVersion.V40, pages=pages)
     bundle.report.notices.forEach { println(describeExportNotice(it)) }
     check(bundle.report.notices.isEmpty()) { "Export reported notices" }
     bundle.files.forEach { f -> File(output, f.name).apply { parentFile.mkdirs(); writeBytes(f.bytes) } }

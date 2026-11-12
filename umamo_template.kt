@@ -6,7 +6,6 @@ import org.umamo.runtime.model.*
 import org.umamo.format.moc3.moc.MocVersion
 import org.umamo.interop.moc3.Moc3Sidecars
 import org.umamo.interop.describeExportNotice
-import org.umamo.render.canvasToParentSpaceFor
 
 // Generic separate-layer transport. This exports a static model, not a rig.
 fun main(args: Array<String>) {
@@ -24,7 +23,7 @@ fun main(args: Array<String>) {
         val scale = placement?.get("scale")?.jsonPrimitive?.float ?: 1f
         val sx=placement?.get("scale_x")?.jsonPrimitive?.float ?: scale;val sy=placement?.get("scale_y")?.jsonPrimitive?.float ?: scale
         val w = dimensions[0].jsonPrimitive.float * sx; val h = dimensions[1].jsonPrimitive.float * sy
-        val mesh = DrawableMesh(floatArrayOf(x,y,x+w,y,x+w,y+h,x,y+h), floatArrayOf(0f,0f,1f,0f,1f,1f,0f,1f), intArrayOf(0,1,2,0,2,3))
+        val mesh = DrawableMesh.withLocalEqualToCanvas(floatArrayOf(x,y,x+w,y,x+w,y+h,x,y+h), floatArrayOf(0f,0f,1f,0f,1f,1f,0f,1f), intArrayOf(0,1,2,0,2,3))
         val id = "Part" + i
         Drawable(DrawableId(id), item.getValue("name").jsonPrimitive.content, null, BlendMode.Normal, emptyList(), mesh, null, drawOrder=i.toFloat(), texturePage=i)
     }
@@ -34,7 +33,7 @@ fun main(args: Array<String>) {
         val path = row.jsonObject.getValue("path").jsonPrimitive.content
         Moc3Sidecars.AtlasPage("textures/part${i}.png", File(project, path).readBytes())
     }
-    val bundle = Moc3Sidecars.bundle(model, "Model", version=MocVersion.V40, pages=pages, canvasToParentSpace=canvasToParentSpaceFor(model))
+    val bundle = Moc3Sidecars.bundle(model, "Model", version=MocVersion.V40, pages=pages)
     bundle.report.notices.forEach { println(describeExportNotice(it)) }
     check(bundle.report.notices.isEmpty()) { "Export reported notices" }
     bundle.files.forEach { f -> File(output, f.name).apply { parentFile.mkdirs(); writeBytes(f.bytes) } }
