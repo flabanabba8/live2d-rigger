@@ -3,6 +3,16 @@ import hashlib,json,os,re,shutil,signal,subprocess,uuid
 from pathlib import Path
 from .core import inspect_resources
 
+EXEC_KEYS={'java','umamo_compiler_classpath','umamo_runtime_classpath','viewer_dir','render_python','authoring_command','motion_command'}
+
+
+def clean_env(extra=None):
+    """Environment for every subprocess: no provider keys or other secrets from the host. PATH, HOME, LANG and a few toolchain variables only."""
+    env={k:v for k,v in os.environ.items()if k in('PATH','HOME','JAVA_HOME','LANG','LC_ALL','SystemRoot','TEMP','TMP','TMPDIR')}
+    env.update(extra or{})
+    return env
+
+
 IDENT=re.compile(r'^[0-9a-f]{32}$')
 AGENTS={'codex','claude','gemini','hermes'}
 def save(path,value):
@@ -13,7 +23,40 @@ def digest(path):
     with Path(path).open('rb')as f:return hashlib.file_digest(f,'sha256').hexdigest()
 
 class Production:
-    def __init__(self,root):self.root=Path(root)/'model-projects';self.root.mkdir(parents=True,exist_ok=True,mode=0o700)
+    def __init__(self,root,settings=None):
+        self.root=Path(root)/'model-projects';self.root.mkdir(parents=True,exist_ok=True,mode=0o700)
+        self.settings=dict(settings or{})   # owner-set plugin settings: the only source of executables, classpaths, viewer and commands
+    def _argv_setting(self,key):
+        value=self.settings.get(key)
+        if not value:return None
+        if isinstance(value,str):
+            try:value=json.loads(value)
+            except ValueError:raise ValueError('The plugin setting %s must be a JSON array of arguments'%key)from None
+        return value
+    def _toolchain_resources(self):
+        """Java and Umamo classpaths from the owner's settings (the model cannot supply them)."""
+        res={}
+        if self.settings.get('java'):res['java']=str(Path(str(self.settings['java'])).expanduser())
+        cp=self.settings.get('umamo_classpath_file')
+        if cp:
+            path=Path(str(cp)).expanduser()
+            if not path.is_file():raise ValueError('The plugin setting umamo_classpath_file does not point to an existing file')
+            doc=json.loads(path.read_text())
+            for name,key in(('compiler','umamo_compiler_classpath'),('runtime','umamo_runtime_classpath')):
+                values=doc.get(name)
+                if not isinstance(values,list)or not values or any(not isinstance(x,str)or not Path(x).exists()for x in values):raise ValueError('Classpath JSON needs compiler and runtime arrays of existing paths')
+                res[key]=os.pathsep.join(values)
+        return res
+    def build_configured(self,model_id,timeout_seconds=300):
+        p,data=self.load(model_id);argv=None
+        if data['rig_file']not in('builtin:static-layers','builtin:prototype-roll'):
+            argv=self._argv_setting('authoring_command')
+            if argv is None:raise ValueError('This rig needs your own authoring command. Set the plugin setting authoring_command (a JSON array of arguments containing {project} and {output}) in Hermes settings; the model cannot choose a command.')
+        return self.build(model_id,argv,timeout_seconds)
+    def motion_configured(self,model_id,timeout_seconds=300):
+        argv=self._argv_setting('motion_command')
+        if argv is None:raise ValueError('Set the plugin setting motion_command (a JSON array of arguments containing {project} and {output}) in Hermes settings, or use live2d_render_clip, which uses the built-in Core renderer; the model cannot choose a command.')
+        return self.motion(model_id,argv,timeout_seconds)
     def load(self,model_id):
         if not isinstance(model_id,str)or not IDENT.fullmatch(model_id):raise ValueError('Invalid model production ID')
         p=self.root/model_id
@@ -22,6 +65,7 @@ class Production:
     def begin(self,name,brief,resources=None):
         if not isinstance(name,str)or not name.strip()or len(name)>120 or not isinstance(brief,str)or not brief.strip()or len(brief)>12000:raise ValueError('Supply a character name and complete bounded brief')
         if resources is not None and(not isinstance(resources,dict)or len(json.dumps(resources))>12000):raise ValueError('Resource choices must be a bounded non-secret object')
+        if resources and EXEC_KEYS&set(resources):raise ValueError('Executables, classpaths, the viewer folder and commands are set by the owner in the plugin settings, not in tool arguments: '+', '.join(sorted(EXEC_KEYS&set(resources))))
         ident=uuid.uuid4().hex;p=self.root/ident;p.mkdir(mode=0o700);(p/'layers').mkdir();(p/'src').mkdir();data={'model_id':ident,'name':name,'brief':brief,'resources':resources or{},'layers':[],'rig_file':None,'phase':'design','accepted':False};save(p/'model-project.json',data)
         return {**data,'project_path':str(p),'next_steps':['Use the active host and native MAIN-session image tools to design complete editable parts, including hidden backing regions.','Review/import complete layers; author an executable rig using the selected real producer’s API, not guessed coefficients from another character.','Build through a real authoring toolchain; inspect compiled resources, run actual Core/domain checks and render motion.','Deliver source/layers, rig, native editable/runtime exports and reviewed animation. No physical camera/VTS/tracking or installation is authorized automatically.'],'notice':'Production started; no model has been generated or rigged yet.'}
     def clone(self,model_id,name=None):
@@ -160,17 +204,12 @@ class Production:
         if canvas and (x<0 or y<0 or x+layer['dimensions'][0]*sx>canvas[0] or y+layer['dimensions'][1]*sy>canvas[1]):raise ValueError('Placed layer must fit in the common canvas')
         layer['placement']={'x':x,'y':y,'scale_x':sx,'scale_y':sy};layer.pop('placement_pending',None);data['build_stale']=bool(data.get('model_path'));save(p/'model-project.json',data)
         return {'name':name,'placement':layer['placement'],'notice':'Original artwork is unchanged. Rebuild and review the composite before accepting it.'}
-    def configure_umamo(self,model_id,java,classpath_file):
-        p,data=self.load(model_id)
-        path=Path(classpath_file).expanduser();jdk=Path(java).expanduser()
-        if not path.is_file() or not jdk.is_file():raise ValueError('Provide an existing classpath JSON and Java executable for the installed toolchain')
-        doc=json.loads(path.read_text())
-        for name in ('compiler','runtime'):
-            values=doc.get(name)
-            if not isinstance(values,list) or not values or any(not isinstance(x,str) or not Path(x).exists() for x in values):raise ValueError('Classpath JSON needs compiler and runtime arrays of existing paths')
-        resources=data.setdefault('resources',{});resources.update(java=str(jdk),umamo_compiler_classpath=os.pathsep.join(doc['compiler']),umamo_runtime_classpath=os.pathsep.join(doc['runtime']))
-        save(p/'model-project.json',data)
-        return {'model_id':model_id,'configured':True,'notice':'Installed Umamo classpaths configured for this private project; no software was installed.'}
+    def configure_umamo(self,model_id):
+        """Check the Java and Umamo classpaths the owner set in the plugin settings. The model cannot supply paths."""
+        self.load(model_id)
+        from .umamo_adapter import toolchain
+        toolchain(self._toolchain_resources())
+        return {'model_id':model_id,'configured':True,'notice':'The Java and Umamo classpaths from the plugin settings (java, umamo_classpath_file) or the LIVE2D_* environment variables are usable; no software was installed.'}
     def arrange(self,model_id,names):
         p,data=self.load(model_id)
         if not isinstance(names,list) or any(not isinstance(n,str) for n in names) or len(names)!=len(data['layers']) or len(set(names))!=len(names) or set(names)!={layer['name'] for layer in data['layers']}:
@@ -196,7 +235,7 @@ class Production:
         if Path(argv[0]).name.lower().removesuffix('.exe')in AGENTS or any(Path(x).name=='agent.sh'for x in argv):raise ValueError('Use a real authoring/render toolchain, not another agent session')
         if not any('{project}'in x for x in argv)or not any('{output}'in x for x in argv):raise ValueError('Selected toolchain arguments need explicit {project} and {output} paths')
         if type(timeout_seconds)is not int or not 1<=timeout_seconds<=900:raise ValueError('Choose a1–900second bounded operation')
-        actual=[x.replace('{project}',str(p)).replace('{output}',str(output))for x in argv];log=p/(uuid.uuid4().hex+'-tool.log');env={k:v for k,v in os.environ.items()if k in('PATH','HOME','JAVA_HOME','LANG','LC_ALL','SystemRoot','TEMP','TMP','TMPDIR')}
+        actual=[x.replace('{project}',str(p)).replace('{output}',str(output))for x in argv];log=p/(uuid.uuid4().hex+'-tool.log');env=clean_env()
         with log.open('wb')as stream:
             log.chmod(0o600);proc=subprocess.Popen(actual,cwd=p,env=env,stdin=subprocess.DEVNULL,stdout=stream,stderr=stream,start_new_session=os.name!='nt')
             try:proc.wait(timeout=timeout_seconds)
@@ -214,7 +253,7 @@ class Production:
         output=p/('build-'+uuid.uuid4().hex[:8]);output.mkdir()
         if data['rig_file'] in ('builtin:static-layers','builtin:prototype-roll') and command_argv is None:
             from .umamo_adapter import build
-            build(p,output,timeout_seconds,data.get('resources'),data['rig_file']=='builtin:prototype-roll')
+            build(p,output,timeout_seconds,self._toolchain_resources(),data['rig_file']=='builtin:prototype-roll')
         else:self.command(p,command_argv,output,timeout_seconds)
         models=list(output.rglob('*.model3.json'))
         if len(models)!=1:raise ValueError('The native producer must emit one actual Cubism model3.json package; no model placeholder accepted')
@@ -242,11 +281,11 @@ class Production:
         if not probe or not decoder:raise ValueError('Motion review requires selected installed ffprobe and ffmpeg; output retained, no success inferred')
         for video in videos:
             if video.is_symlink()or not video.resolve().is_relative_to(output.resolve())or not video.stat().st_size:raise ValueError('Renderer output must be a nonempty regular video in its own output directory')
-            checked=subprocess.run([probe,'-v','error','-select_streams','v:0','-show_entries','stream=width,height:format=duration','-of','json',str(video)],capture_output=True,timeout=15)
+            checked=subprocess.run([probe,'-v','error','-select_streams','v:0','-show_entries','stream=width,height:format=duration','-of','json',str(video)],capture_output=True,timeout=15,env=clean_env())
             try:metadata=json.loads(checked.stdout);duration=float(metadata['format']['duration']);stream=metadata['streams'][0]
             except (ValueError,KeyError,IndexError):raise ValueError('Renderer output is not a measured motion video')from None
             if checked.returncode or not 0<duration<=900 or not stream.get('width')or not stream.get('height'):raise ValueError('Renderer output failed motion metadata checks')
-            decoded=subprocess.run([decoder,'-v','error','-xerror','-i',str(video),'-map','0:v:0','-an','-f','null','-'],stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=60)
+            decoded=subprocess.run([decoder,'-v','error','-xerror','-i',str(video),'-map','0:v:0','-an','-f','null','-'],stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=60,env=clean_env())
             if decoded.returncode:raise ValueError('Renderer video failed full frame decoding; output retained for diagnosis')
         data.update(phase='static_review_pending' if data.get('rig_file')=='builtin:static-layers' else 'motion_review_pending',motion_videos=[str(x.relative_to(p))for x in videos]);save(p/'model-project.json',data)
         return {'model_id':model_id,'videos':[str(x)for x in videos],'phase':data['phase'],'notice':('Static-only output: inspect the still; no motion or physics exists.' if data.get('rig_file')=='builtin:static-layers' else 'Inspect actual frames/motion in the MAIN session and report remaining issues. No physical camera, tracking or VTS installation was performed by this workflow.')}
@@ -257,7 +296,7 @@ class Production:
         return data
 
     # ---- existing models: work on a copy, never on the user's original ----
-    def open_existing(self,name,model_path,viewer_dir=None,render_python=None):
+    def open_existing(self,name,model_path):
         if not isinstance(name,str)or not name.strip()or len(name)>120:raise ValueError('Give the character a name')
         source=Path(str(model_path)).expanduser()
         if source.is_dir()and not source.is_symlink():
@@ -269,19 +308,18 @@ class Production:
         if report['issues']or any(x['status']!='present'for x in report['resources']):raise ValueError('The model has missing or unsafe resources; nothing was copied')
         folder=source.parent.resolve();files=[x for x in folder.rglob('*')if x.is_file()]
         if any(x.is_symlink()for x in folder.rglob('*'))or sum(x.stat().st_size for x in files)>2*1024**3:raise ValueError('The model folder has links or is larger than 2 GB; nothing was copied')
-        resources={k:v for k,v in(('viewer_dir',viewer_dir),('render_python',render_python))if v}
-        began=self.begin(name,'Existing model opened for inspection and changes; the original files are never modified.',resources)
+        began=self.begin(name,'Existing model opened for inspection and changes; the original files are never modified.')
         p,data=self.load(began['model_id']);dest=p/'model';shutil.copytree(folder,dest,symlinks=False)
         copy=dest/source.name;moc=dest/json.loads(copy.read_text())['FileReferences']['Moc']
         data.update(phase='opened_existing',origin='existing',model_path=str(copy.relative_to(p)),moc_sha256=digest(moc),original_moc_sha256=digest(folder/moc.relative_to(dest)),changes=[],clips=[]);save(p/'model-project.json',data)
         return {'model_id':began['model_id'],'name':name,'phase':data['phase'],'moc_sha256':data['moc_sha256'],'files_copied':len(files),'renderer':{k:v for k,v in self.renderer(data).items()if k in('ready','missing')},'notice':'A working copy was made inside this project; the original model was not touched.'}
     def renderer(self,data):
-        res=data.get('resources')or{};viewer=res.get('viewer_dir')or os.environ.get('LIVE2D_SDK_VIEWER');python=res.get('render_python')or os.environ.get('LIVE2D_RENDER_PYTHON')or shutil.which('python3')
+        viewer=self.settings.get('viewer_dir')or os.environ.get('LIVE2D_SDK_VIEWER');python=self.settings.get('render_python')or os.environ.get('LIVE2D_RENDER_PYTHON')or shutil.which('python3')
         missing=[]
-        if not viewer or not all((Path(viewer)/n).is_file()for n in('index.html','viewer.js','core.min.js')):missing.append('Cubism SDK viewer folder (set LIVE2D_SDK_VIEWER or pass viewer_dir to live2d_open_model)')
+        if not viewer or not all((Path(str(viewer))/n).is_file()for n in('index.html','viewer.js','core.min.js')):missing.append('Cubism SDK viewer folder (set the plugin setting viewer_dir or LIVE2D_SDK_VIEWER)')
         else:
-            if not(Path(viewer)/'framework'/'Shaders').is_dir():missing.append('viewer framework/Shaders')
-        if not python or subprocess.run([python,'-c','import playwright'],capture_output=True,timeout=30).returncode:missing.append('a Python with Playwright (set LIVE2D_RENDER_PYTHON)')
+            if not(Path(str(viewer))/'framework'/'Shaders').is_dir():missing.append('viewer framework/Shaders')
+        if not python or subprocess.run([python,'-c','import playwright'],capture_output=True,timeout=30,env=clean_env()).returncode:missing.append('a Python with Playwright (set the plugin setting render_python or LIVE2D_RENDER_PYTHON)')
         if not shutil.which('ffmpeg'):missing.append('ffmpeg')
         return {'ready':not missing,'missing':missing,'viewer_dir':viewer,'python':python}
     def _bridge(self,data,args,timeout=300):
@@ -301,7 +339,7 @@ class Production:
         result={'model_id':model_id,'moc_sha256':data['moc_sha256'],'textures':len(refs.get('Textures',[])),'expressions':[e.get('Name')for e in refs.get('Expressions',[])],'motion_groups':{k:len(v)for k,v in refs.get('Motions',{}).items()},'control_groups':groups,'parameters_named':[x.get('Id')for x in(cdi or{}).get('Parameters',[])],'physics':physics,'changes':data.get('changes',[])}
         try:
             command=self._bridge(data,['inspect',str(model)])
-            done=subprocess.run(command,capture_output=True,timeout=180,cwd=p,env={k:v for k,v in os.environ.items()if k in('PATH','HOME','LANG','LC_ALL','TMPDIR')})
+            done=subprocess.run(command,capture_output=True,timeout=180,cwd=p,env=clean_env())
             if done.returncode:raise RuntimeError(done.stderr.decode(errors='replace')[-300:])
             core=json.loads(done.stdout);result['core']={'parts':core['parts'],'drawable_count':len(core['drawables']),'drawables':core['drawables'],'parameter_ranges':core['parameters'],'core_version':core['coreVersion']}
         except(ValueError,RuntimeError,subprocess.TimeoutExpired,OSError)as exc:result['core']={'unavailable':str(exc)[:300]}
@@ -311,7 +349,7 @@ class Production:
         if not data.get('model_path'):raise ValueError('Open or build a model before checking domains')
         if data.get('build_stale'):raise ValueError('Layers or placement changed; rebuild before checking domains')
         argv=self._bridge(data,['domains',str(p/data['model_path'])])
-        result=subprocess.run(argv,capture_output=True,timeout=180,cwd=p,env={k:v for k,v in os.environ.items() if k in ('PATH','HOME','LANG','LC_ALL','TMPDIR')})
+        result=subprocess.run(argv,capture_output=True,timeout=180,cwd=p,env=clean_env())
         if result.returncode:raise RuntimeError('Core domain evaluation failed; no validation is claimed')
         return json.loads(result.stdout)
     def adjust_physics(self,model_id,output_scale=1.0,input_weight=1.0,follow_through=1.0,groups=None,note='',restore_original=False):
@@ -341,7 +379,7 @@ class Production:
 
     def _core_ranges(self,p,data):
         try:
-            model=p/data['model_path'];done=subprocess.run(self._bridge(data,['inspect',str(model)]),capture_output=True,timeout=180,cwd=p,env={k:v for k,v in os.environ.items()if k in('PATH','HOME','LANG','LC_ALL','TMPDIR')})
+            model=p/data['model_path'];done=subprocess.run(self._bridge(data,['inspect',str(model)]),capture_output=True,timeout=180,cwd=p,env=clean_env())
             return{x['id']:(x['min'],x['max'])for x in json.loads(done.stdout)['parameters']}if done.returncode==0 else None
         except(ValueError,RuntimeError,subprocess.TimeoutExpired,OSError,KeyError):return None
     def write_motion(self,model_id,name,tracks,seconds=8,fps=30,as_idle=True,note=''):
@@ -403,7 +441,7 @@ class Production:
             if not backup.exists():backup.parent.mkdir(exist_ok=True);shutil.copyfile(model,backup)
             settings=json.loads(backup.read_text());settings['FileReferences'].setdefault('Motions',{})['Idle']=[{'File':'motions/'+out.name}];model.write_text(json.dumps(settings,indent=2))
         from .motion import check_motion
-        check=check_motion(str(folder/refs['DisplayInfo']),str(out))if refs.get('DisplayInfo')else None
+        check=check_motion(str(folder/refs['DisplayInfo']),str(out),own_root=self.root)if refs.get('DisplayInfo')else None
         data.setdefault('changes',[]).append({'what':'wrote motion','name':name,'parameters':list(curves),'seconds':seconds,'used_as_idle':as_idle,'note':note});save(p/'model-project.json',data)
         return{'model_id':model_id,'motion':name,'file':'motions/'+out.name,'seconds':seconds,'parameters':list(curves),'values_limited_to_range':clamped,'warnings':warnings,'check':check,'used_as_idle':as_idle,'notice':'Written to the working copy only. Render it with live2d_render_clip (motion name) and look at the frames.'}
     def _motion_arg(self,folder,settings,name):
@@ -434,7 +472,7 @@ class Production:
 
 S={'type':'string'};M={'model_id':S}
 TOOLS={
-'live2d_begin_model':('Begin creating a complete editable Live2D character from a brief and the user’s actual resources. Artwork, rigging, native compilation and motion review are production stages; inspectors remain diagnostics.',{'name':S,'brief':S,'resources':{'type':'object'}},['name','brief'],'begin'),
+'live2d_begin_model':('Begin creating a complete editable Live2D character from a brief and the user’s actual resources. Artwork, rigging, native compilation and motion review are production stages; inspectors remain diagnostics.',{'name':S,'brief':S,'resources':{'type':'object','description':'Non-executable notes only (for example art style). Executables, classpaths, the viewer and commands are plugin settings and are refused here.'}},['name','brief'],'begin'),
 'live2d_remove_layer':('Remove a layer from the active assembly without deleting its source PNG or previous builds; rebuild to apply.',{**M,'name':S},['model_id','name'],'remove_layer'),
 'live2d_clone_model':('Copy a plugin-owned EDITABLE LAYER PROJECT including its source layers and evidence for a reversible repair; do not use live2d_open_model, which copies a compiled runtime only. The source project stays unchanged.',{**M,'name':S},['model_id'],'clone'),
 'live2d_model_layer':('Import one independently painted complete part after MAIN-session native image creation/review; complete_part=true attests to complete hidden backing and refuses flat portrait slices. This is an attestation, not automated proof. Preserve hidden backing and neutral identity; do not treat interlocked portrait slices as complete parts. Names are unique per model. Parts are either full-canvas PNGs sharing one canvas size, or cropped PNGs with integer x and y placement on that canvas. For an opaque single-flat-colour image, supply key_color as [R,G,B] or [] to detect from corners; the tool performs a conservative cutout and returns a before/after preview. trim requires x and y. For a same-canvas reference edit set same_canvas_edit=true and reference_path to verify and correct high-confidence drift; low confidence preserves its coordinates and requests a nudge.',{**M,'name':S,'role':S,'source_path':S,'review_note':S,'x':{'type':'integer'},'y':{'type':'integer'},'key_color':{'type':'array','items':{'type':'integer'}},'tolerance':{'type':'integer'},'softness':{'type':'integer'},'trim':{'type':'boolean'},'complete_part':{'type':'boolean'},'aligned_to_reference':{'type':'boolean'},'same_canvas_edit':{'type':'boolean'},'reference_path':{'type':'string'}},['model_id','name','role','source_path','review_note','complete_part'],'layer'),
@@ -444,13 +482,13 @@ TOOLS={
 'live2d_place_layer':('Adjust layer placement, position, offset, move or scale an imported part on the shared canvas without resampling artwork; rebuild and render to apply.',{**M,'name':S,'x':{'type':'number'},'y':{'type':'number'},'scale':{'type':'number'},'scale_x':{'type':'number'},'scale_y':{'type':'number'}},['model_id','name','x','y'],'place_layer'),
 'live2d_rebuild_prototype':('Rebuild an experimental prototype using the current built-in authoring recipe after an observed geometry issue, preserving earlier builds. Render the same motion and compare; rebuilding does not guarantee a visual fix.',{**M,'timeout_seconds':{'type':'integer','minimum':1,'maximum':900}},['model_id'],'rebuild_prototype'),
 'live2d_check_rig_domains':('Evaluate each actual Core parameter at minimum, default and maximum, check finite geometry and report movement. This does not review intermediate poses or visual quality.',M,['model_id'],'check_domains'),
-'live2d_configure_umamo':('Configure an existing installed Java and Umamo toolchain using a user-supplied JSON file with compiler and runtime path arrays. No installation occurs.',{**M,'java':S,'classpath_file':S},['model_id','java','classpath_file'],'configure_umamo'),
+'live2d_configure_umamo':('Check the Java and Umamo classpaths the owner set in the plugin settings (java, umamo_classpath_file) or the LIVE2D_* environment variables. The model cannot supply paths. No installation occurs.',M,['model_id'],'configure_umamo'),
 'live2d_arrange_layers':('Arrange all imported complete layers back to front before building; list every layer name exactly once.',{**M,'names':{'type':'array','items':S}},['model_id','names'],'arrange'),
 'live2d_model_rig':('Save authored rig source, omit source for static export, or pass source=prototype-roll for experimental head roll, basic torso sway/breathing and provisional blink/gaze and mouth opening when matching parts exist. Experimental back-hair physics is included when hair is present; neither route supplies XY turns or mouth form.',{**M,'source':S,'filename':S},['model_id'],'rig'),
-'live2d_build_model':('Build with the configured Umamo toolchain when using the static layer export, or run an explicitly selected real native authoring command; requires actual MOC3/model3 output. Trusted toolchain code executes; use only the resource/paths authorized for this production. Missing compiler stays blocked.',{**M,'command_argv':{'type':'array','items':S},'timeout_seconds':{'type':'integer','minimum':1,'maximum':900}},['model_id'],'build'),
-'live2d_render_model_motion':('Render the built model through a selected actual SDK/Core renderer into a real motion MP4 for MAIN-session review. No physical camera/tracker/VTS integration is part of this operation.',{**M,'command_argv':{'type':'array','items':S},'timeout_seconds':{'type':'integer','minimum':1,'maximum':900}},['model_id','command_argv'],'motion'),
+'live2d_build_model':('Build with the configured Umamo toolchain when using the static layer export, or run the authoring command the owner set in the plugin settings (authoring_command); requires actual MOC3/model3 output. The model cannot choose a command. Missing compiler stays blocked.',{**M,'timeout_seconds':{'type':'integer','minimum':1,'maximum':900}},['model_id'],'build_configured'),
+'live2d_render_model_motion':('Render the built model with the motion renderer command the owner set in the plugin settings (motion_command) into a real motion MP4 for MAIN-session review; live2d_render_clip uses the built-in Core renderer instead. The model cannot choose a command. No physical camera/tracker/VTS integration is part of this operation.',{**M,'timeout_seconds':{'type':'integer','minimum':1,'maximum':900}},['model_id'],'motion_configured'),
 'live2d_model_status':('Read actual model production layers/rig/compiled package/motion state, never a fabricated ready flag.',M,['model_id'],'status')
-,'live2d_open_model':('Open an EXISTING compiled runtime model only (not an editable layer project; use live2d_clone_model to copy a plugin-owned layer project). Open an EXISTING Live2D model (the .model3.json the user already has, or the folder that holds it; give a full absolute path) as a working copy inside a new project, so it can be inspected, changed and rendered. The original files are never modified. Use this when the user already has a character; use live2d_begin_model to create a new one.',{'name':S,'model_path':S,'viewer_dir':S,'render_python':S},['name','model_path'],'open_existing'),
+,'live2d_open_model':('Open an EXISTING compiled runtime model only (not an editable layer project; use live2d_clone_model to copy a plugin-owned layer project). Open an EXISTING Live2D model (the .model3.json the user already has, or the folder that holds it; give a full absolute path) as a working copy inside a new project, so it can be inspected, changed and rendered. The original files are never modified. Use this when the user already has a character; use live2d_begin_model to create a new one.',{'name':S,'model_path':S},['name','model_path'],'open_existing'),
 'live2d_inspect_model':('Describe an opened model in plain terms: controls, expressions, motions, physics groups (what drives what, how strongly) and, when the Cubism renderer is available, the separate parts and drawable pieces and each control range.',M,['model_id'],'inspect_model'),
 'live2d_adjust_physics':('Change how loose parts (hair, tentacles, skirt) swing in an opened copy or built project: multipliers for output strength, how strongly head/body motion drives them, and follow-through (swing that continues after the head stops). Applied to the saved original each time, not compounded. restore_original undoes it.',{**M,'output_scale':{'type':'number'},'input_weight':{'type':'number'},'follow_through':{'type':'number'},'groups':{'type':'array','items':S},'note':S,'restore_original':{'type':'boolean'}},['model_id'],'adjust_physics'),
 'live2d_render_clip':('Render the opened or built model moving through the official Cubism Core (physics running) into a labelled motion clip. motion: a motion name from the model or one you wrote; left out it plays the model\u2019s own Idle motion (how she moves now), or standard if it has none; standard = test sequence (head turns left and right, blinks, small body sway); rest = no motion. Same camera and length every time so before/after clips compare directly. Look at the contact sheet in the main session.',{**M,'label':S,'motion':S,'seconds':{'type':'number'},'view':{'type':'string','enum':['full','upper','head']},'width':{'type':'integer'},'height':{'type':'integer'}},['model_id','label'],'render_clip'),'live2d_write_motion':('Write a new motion (for example an idle that makes her breathe, sway, look around and blink) into an opened copy or built project from plain curve descriptions, validated against the model\u2019s real parameter ids and ranges, and register it as the Idle motion. tracks: list of {parameter, wave:sine (center, amplitude, cycles = whole number per loop, optional phase 0-1) | blink (at: [seconds], optional closed_seconds, open_value, closed_value) | keys ([[seconds, value], ...] eased)}. The structural check runs automatically.',{**M,'name':S,'tracks':{'type':'array','items':{'type':'object'}},'seconds':{'type':'number'},'fps':{'type':'integer'},'as_idle':{'type':'boolean'},'note':S},['model_id','name','tracks'],'write_motion')}

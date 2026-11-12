@@ -18,7 +18,7 @@ ANSWERS = {'character': 'a fox girl mascot', 'source': 'ai generated', 'use': 'v
 
 
 def report(hw=HW_BIG):
-    return R.survey(Path('/nonexistent'), R.load_catalog(), which=lambda c: None, hw=hw, keys={})
+    return R.survey(Path('/nonexistent'), R.load_catalog(), which=lambda c: None, hw=hw)
 
 
 class Catalog(unittest.TestCase):

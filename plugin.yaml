@@ -1,5 +1,5 @@
 name: live2d-rigger
-version: "0.6.0"
+version: "0.6.1"
 description: "Create and rig editable Live2D characters from a brief, using native image tools and a selected real authoring/SDK toolchain, with motion review. Also opens a character you already have, shows how she is put together, changes how her hair or skirt swings on a copy, and renders the same motion before and after."
 author: "Live2D Rigger contributors"
 license: GPL-3.0-or-later
@@ -7,6 +7,13 @@ requires_hermes: ">=0.22.0"
 python_dependencies:
   - "Pillow==13.0.0"
   - "numpy>=1.26,<3"
+config_schema:
+  java: {type: str, default: "", description: "Path to your Java (JDK 21+) executable for the Umamo toolchain. Set by you; the model cannot change it."}
+  umamo_classpath_file: {type: str, default: "", description: "Path to a JSON file with compiler and runtime arrays of existing Umamo/Kotlin library paths. Set by you."}
+  render_python: {type: str, default: "", description: "Path to a Python that has Playwright, used to render with the Cubism Core viewer. Set by you."}
+  viewer_dir: {type: str, default: "", description: "Folder of the Cubism SDK web viewer (index.html, viewer.js, core.min.js, framework/Shaders). Set by you; you accept Live2D's licence yourself."}
+  authoring_command: {type: str, default: "", description: "Optional JSON array of arguments for your own trusted authoring command, with {project} and {output}. Used only for rigs that are not the built-in ones. Set by you."}
+  motion_command: {type: str, default: "", description: "Optional JSON array of arguments for your own trusted motion renderer, with {project} and {output}. Set by you."}
 provides_tools:
   - live2d_setup
   - live2d_begin_model

@@ -72,7 +72,7 @@ Use independently painted complete parts on flat magenta (green when the artwork
 
 Clearly key-coloured areas, including enclosed holes, are removed and tinted orange in the preview. Never use the key colour in the artwork itself; review the tinted regions. Do not automatically regenerate: state the visible defect and correction, then allow at most one targeted redo per part.
 
-Use `live2d_configure_umamo` to bind an existing JDK executable and user-supplied classpath JSON (`compiler` and `runtime` arrays) to the private model project. For an observed assembly problem use `live2d_place_layer` to change a complete layer’s position and uniform scale without modifying its PNG; rebuild and compare the same Core view. Placement and order changes invalidate the prior build. A good static composite is not a rig.
+Use `live2d_configure_umamo` to check the Java and Umamo classpaths the owner set in the plugin settings (`java`, `umamo_classpath_file`, a JSON file with `compiler` and `runtime` arrays) against the private model project. The model cannot supply paths. For an observed assembly problem use `live2d_place_layer` to change a complete layer’s position and uniform scale without modifying its PNG; rebuild and compare the same Core view. Placement and order changes invalidate the prior build. A good static composite is not a rig.
 
 ### Experimental head roll
 

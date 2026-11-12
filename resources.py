@@ -125,6 +125,13 @@ def apply_updates(rows, updates):
     return rows
 # ---- end knowledge freshness ----
 
+def minimal_env(extra=None):
+    """Environment for every subprocess this module starts: no provider keys or other secrets from the host. PATH, HOME and LANG only."""
+    env = {'PATH': os.environ.get('PATH', ''), 'HOME': os.path.expanduser('~'), 'LANG': 'C'}
+    env.update(extra or {})
+    return env
+
+
 def hardware(run=subprocess.run, platform=None, which=shutil.which, read_text=None):
     """Numbers only about THIS computer: operating system, CPU threads, RAM, GPUs with memory, Apple Silicon.
     No hostname, serial number or account detail. Reads local files and runs local programs; sends nothing."""
@@ -138,7 +145,7 @@ def hardware(run=subprocess.run, platform=None, which=shutil.which, read_text=No
 
     def out(argv, timeout=15):
         try:
-            r = run(argv, capture_output=True, text=True, timeout=timeout)
+            r = run(argv, capture_output=True, text=True, timeout=timeout, env=minimal_env())
             return r.stdout if r.returncode == 0 else ''
         except Exception:
             return ''
@@ -235,11 +242,12 @@ def installed(catalog=None, which=shutil.which):
     return {k: v for k, v in out.items() if v}
 
 
-def survey(root, catalog=None, which=shutil.which, hw=None, keys=None):
+def survey(root, catalog=None, which=shutil.which, hw=None, owner_settings=None):
     cat = catalog or load_catalog(update_root=root)
-    keys = keys if keys is not None else {n: bool(os.environ.get(n)) for n in ('OPENAI_API_KEY', 'GEMINI_API_KEY', 'BFL_API_KEY', 'STABILITY_API_KEY', 'IDEOGRAM_API_KEY', 'RECRAFT_API_TOKEN')}
-    return {'installed_on_path': installed(cat, which), 'hardware': hw or hardware(), 'image_service_keys_present': sorted(k for k, v in keys.items() if v),
-            'note': 'Presence of a key is reported as yes/no only; the Cubism Editor lives outside PATH, so ask the user whether they have it.'}
+    return {'installed_on_path': installed(cat, which), 'hardware': hw or hardware(),
+            'owner_settings_set': {k: bool((owner_settings or {}).get(k)) for k in ('java', 'umamo_classpath_file', 'render_python', 'viewer_dir', 'authoring_command', 'motion_command')},
+            'owner_settings_note': 'These plugin settings are the only way to give the plugin a Java, a viewer, a Python or a command; the model cannot set them. Ask the user to fill in the ones their chosen toolchain needs.',
+            'note': 'This plugin does not look for image-service keys: image generation goes through the host agent\'s own image tool, so ask the user which image service or local model they have. The Cubism Editor lives outside PATH, so ask whether they have it.'}
 
 
 # ---------------------------------------------------------------- recommendations
@@ -284,7 +292,7 @@ QUESTIONS = [
     {'key': 'small_scale', 'ask': 'Is your (or your company\'s) annual sales under 10 million yen? (Cubism FREE\'s commercial use depends on it.)', 'type': 'yes/no/unknown'},
     {'key': 'allow_upload', 'ask': 'Is it OK to send prompts or art to an online image service? (A local model sends nothing anywhere.)', 'type': 'yes/no'},
     {'key': 'budget_usd', 'ask': 'Most you want to spend on image generation for this character, in US dollars (0 for free only)?', 'type': 'number'},
-    {'key': 'has', 'ask': 'What do you already have: the Cubism Editor (FREE or PRO), Umamo, ComfyUI or another image tool, an image-service key in this plugin\'s settings, a JDK?', 'type': 'text'},
+    {'key': 'has', 'ask': 'What do you already have: the Cubism Editor (FREE or PRO), Umamo, ComfyUI or another image tool, an account with an image service, a JDK?', 'type': 'text'},
 ]
 ROUTE_KEYS = ('image_route', 'cutout_route', 'rig_route')
 

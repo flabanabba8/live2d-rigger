@@ -2,6 +2,10 @@
 import os
 import shutil
 import subprocess
+
+
+def _env():
+    return {k: v for k, v in os.environ.items() if k in ('PATH', 'HOME', 'JAVA_HOME', 'LANG', 'LC_ALL', 'SystemRoot', 'TEMP', 'TMP', 'TMPDIR')}
 from pathlib import Path
 
 
@@ -26,9 +30,9 @@ def build(project, output, timeout=300, resources=None, prototype=False):
     log = project / 'umamo-build.log'
     with log.open('wb') as stream:
         command = [java, '-Xmx1g', '-cp', compiler, 'org.jetbrains.kotlin.cli.jvm.K2JVMCompiler', '-no-stdlib', '-no-reflect', '-jvm-target', '21', '-classpath', runtime, '-d', str(classes), str(source)]
-        if subprocess.run(command, stdout=stream, stderr=stream, timeout=timeout).returncode:
+        if subprocess.run(command, stdout=stream, stderr=stream, timeout=timeout, env=_env()).returncode:
             raise RuntimeError('Umamo source compilation failed; see the private umamo-build.log')
-        if subprocess.run([java, '-Xmx1g', '-cp', str(classes) + os.pathsep + runtime, ('org.umamo.cli.Umamo_prototypeKt' if prototype else 'org.umamo.cli.Umamo_templateKt'), str(project), str(output)], stdout=stream, stderr=stream, timeout=timeout).returncode:
+        if subprocess.run([java, '-Xmx1g', '-cp', str(classes) + os.pathsep + runtime, ('org.umamo.cli.Umamo_prototypeKt' if prototype else 'org.umamo.cli.Umamo_templateKt'), str(project), str(output)], stdout=stream, stderr=stream, timeout=timeout, env=_env()).returncode:
             raise RuntimeError('Umamo export failed; see the private umamo-build.log')
     if prototype:add_hair_physics(output)
 

@@ -8,11 +8,20 @@ from .core import stable_bytes
 PRIVATE = {'.ssh', '.gnupg', '.aws', '.azure', '.codex', '.docker', '.kube', '.pki', '.config', '.hermes'}
 
 
-def read_json(value, suffix):
+def _private(path, own_root=None):
+    """True when the path runs through a private folder. The plugin's OWN project folder (internal calls only) may sit under .hermes, so only the part below it counts."""
+    parts = path.parts
+    if own_root is not None:
+        try: parts = path.resolve().relative_to(Path(own_root).resolve()).parts
+        except (ValueError, OSError): pass
+    return any(x.casefold() in PRIVATE for x in parts)
+
+
+def read_json(value, suffix, own_root=None):
     path = Path(value).expanduser()
-    if path.is_symlink() or any(x.casefold() in PRIVATE for x in path.parts): raise ValueError('Private paths and symlink inputs are unsupported')
+    if path.is_symlink() or _private(path, own_root): raise ValueError('Private paths and symlink inputs are unsupported')
     path = path.resolve(strict=True)
-    if any(x.casefold() in PRIVATE for x in path.parts) or not path.is_file() or not path.name.endswith(suffix):
+    if _private(path, own_root) or not path.is_file() or not path.name.endswith(suffix):
         raise ValueError('Choose the requested Cubism JSON file outside private configuration')
     raw = stable_bytes(path, 8 * 1024**2)
     try: data = json.loads(raw.decode('utf-8-sig'))
@@ -25,9 +34,9 @@ def number(value):
     return type(value) in (int, float) and math.isfinite(value)
 
 
-def check_motion(cdi_path, motion_path):
-    cdi, cdi_sha = read_json(cdi_path, '.cdi3.json')
-    motion, motion_sha = read_json(motion_path, '.motion3.json')
+def check_motion(cdi_path, motion_path, own_root=None):
+    cdi, cdi_sha = read_json(cdi_path, '.cdi3.json', own_root)
+    motion, motion_sha = read_json(motion_path, '.motion3.json', own_root)
     parameters, parts, curves = cdi.get('Parameters'), cdi.get('Parts', []), motion.get('Curves')
     if not isinstance(parameters, list) or not isinstance(parts, list) or not isinstance(curves, list):
         raise ValueError('Missing or invalid parameter, part or curve list')

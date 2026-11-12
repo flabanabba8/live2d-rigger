@@ -8,6 +8,12 @@
 
 - 2026-11-07: tools renamed `live2d_inspect_resources` and `live2d_check_motion` so the Live2D association is explicit. Read-only copies of five official Live2D reference samples (Haru, Mao, Mark, Natori, Ren) and two user-made rigs were checked: 175 resources all present, 55 motion files with no problems. A copy of Haru with its texture folder and physics file deleted reported 3 missing resources. This is static resource checking only: no MOC3 parsing, rendering or parameter testing. Sample redistribution terms are unchanged; nothing was bundled.
 
+## 0.6.1 - maintainer review (2026-11-12)
+
+Maintainer review. Java, Umamo classpaths, render python/viewer, authoring command and motion command are owner settings, not tool arguments; model creation and build tools ask the user first; no key or credential scanning; every subprocess gets a minimal environment. Re-tested: 77 offline tests (1 skipped: needs a real Java toolchain), all passing; plugin preflight reports no findings.
+
+Live test through Hermes 0.23.0 (2026-11-12, own profile) on a real rigged model (CoralSquid): open as a working copy, inspect, physics change, write and check a motion. Found and fixed: write_motion failed whenever the plugin data folder was under .hermes (every normal install). Not covered: the Cubism Core renderer and the Umamo build (no Cubism SDK viewer or Umamo classpath on the test machine); they report plainly that they are not ready.
+
 ## 2026-11-10 maintained scope revision
 
 Eight offline tests pass, including actual RGBA layer import/rig-source persistence and rejection of unsafe/missing compiled resources and a fake MP4. Native authoring and full character generation have not been live-tested through the new bridge. A previously accepted user-owned motion is a separate existing-model demonstration, not a newly built plugin output. Hermes admission and retirement preflight pass; detailed local receipts are retained in the contest maintenance evidence. Old evidence above keeps its original scope.

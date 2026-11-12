@@ -20,9 +20,9 @@ The exact schemas for `live2d_clone_model`, `live2d_remove_layer`, `live2d_model
 
 ## live2d_render_model_motion
 
-Render the built model through a selected actual SDK/Core renderer into a real motion MP4 for MAIN-session review. No physical camera/tracker/VTS integration is part of this operation.
+Render the built model with the motion renderer command the owner set in the plugin settings (motion_command) into a real motion MP4 for MAIN-session review; live2d_render_clip uses the built-in Core renderer instead. The model cannot choose a command. No physical camera/tracker/VTS integration is part of this operation.
 
-Inputs: `model_id` (required), `command_argv` (required), `timeout_seconds` (optional).
+Inputs: `model_id` (required), `timeout_seconds` (optional).
 
 ## live2d_model_status
 
@@ -32,9 +32,9 @@ Inputs: `model_id` (required).
 
 ## live2d_open_model
 
-Open an EXISTING Live2D model (the .model3.json the user already has, or the folder that holds it; a relative path is read from the current working folder) as a working copy inside a new project, so it can be inspected, changed and rendered. The original files are never modified. Use this when the user already has a character; use live2d_begin_model to create a new one.
+Open an EXISTING compiled runtime model only (not an editable layer project; use live2d_clone_model to copy a plugin-owned layer project). Open an EXISTING Live2D model (the .model3.json the user already has, or the folder that holds it; give a full absolute path) as a working copy inside a new project, so it can be inspected, changed and rendered. The original files are never modified. Use this when the user already has a character; use live2d_begin_model to create a new one.
 
-Inputs: `name` (required), `model_path` (required), `viewer_dir` (optional), `render_python` (optional).
+Inputs: `name` (required), `model_path` (required).
 
 ## live2d_inspect_model
 
@@ -44,14 +44,13 @@ Inputs: `model_id` (required).
 
 ## live2d_adjust_physics
 
-Change how loose parts (hair, tentacles, skirt) swing on the WORKING COPY of an opened model: multipliers for output strength, how strongly head/body motion drives them, and follow-through (swing that continues after the head stops). Applied to the saved original each time, not compounded. restore_original undoes it.
+Change how loose parts (hair, tentacles, skirt) swing in an opened copy or built project: multipliers for output strength, how strongly head/body motion drives them, and follow-through (swing that continues after the head stops). Applied to the saved original each time, not compounded. restore_original undoes it.
 
 Inputs: `model_id` (required), `output_scale` (optional), `input_weight` (optional), `follow_through` (optional), `groups` (optional), `note` (optional), `restore_original` (optional).
 
-
 ## live2d_write_motion
 
-Write a new motion (for example an idle that makes her breathe, sway, look around and blink) into the WORKING COPY of an opened model from plain curve descriptions, validated against the model’s real parameter ids and ranges, and register it as the Idle motion. tracks: list of {parameter, wave:sine (center, amplitude, cycles = whole number per loop, optional phase 0-1) | blink (at: [seconds], optional closed_seconds, open_value, closed_value) | keys ([[seconds, value], ...] eased)}. The structural check runs automatically.
+Write a new motion (for example an idle that makes her breathe, sway, look around and blink) into an opened copy or built project from plain curve descriptions, validated against the model’s real parameter ids and ranges, and register it as the Idle motion. tracks: list of {parameter, wave:sine (center, amplitude, cycles = whole number per loop, optional phase 0-1) | blink (at: [seconds], optional closed_seconds, open_value, closed_value) | keys ([[seconds, value], ...] eased)}. The structural check runs automatically.
 
 Inputs: `model_id` (required), `name` (required), `tracks` (required), `seconds` (optional), `fps` (optional), `as_idle` (optional), `note` (optional).
 
@@ -73,15 +72,14 @@ Check Cubism motion curve structure and compare targets with supplementary displ
 
 Inputs: `cdi_path` (required), `motion_path` (required).
 
-
 ## live2d_reference_samples
 
-List the official free Live2D samples known to this plugin (Hiyori, Haru, Mark-kun, Mao, Ren), whether each is present in the plugin data folder, and the licence links. With `sample_id`, summarise a present sample's parameters, parts, physics, expressions and motion groups from its model3/cdi3/physics3/pose3 JSON. Read-only.
+List the official free Live2D sample models this plugin knows (Hiyori, Haru, Mark, Mao, Ren) with their official pages, whether each is already in the plugin's data folder, and the licence links. With sample_id, summarise that present sample's structure (parameters, parts, physics, expressions, motions) as a reference.
 
 Inputs: `sample_id` (optional).
 
 ## live2d_fetch_reference_sample
 
-Download one official sample zip from cubism.live2d.com into this plugin's data folder as a structural reference. Refuses unless `accept_licence` is true (the user was shown what is downloaded and the licence links and agreed). Reuses a present sample; rejects unsafe archive paths and archives with no model3.json. Network side effect: one HTTPS download from Live2D's host.
+Download one official free Live2D sample from Live2D's own sample-data host into this plugin's data folder, only as a structural reference. Requires accept_licence=true, which means you showed the user what is being downloaded and the licence links and the user agreed. Reuses a present sample.
 
 Inputs: `sample_id` (required), `accept_licence` (required).

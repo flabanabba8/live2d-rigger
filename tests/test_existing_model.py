@@ -87,6 +87,16 @@ class MotionTests(unittest.TestCase):
         self.app.write_motion(i,'alive',tracks[:1],seconds=4)
         (folder/'motions/orig.motion3.json').write_text('{}')
         with self.assertRaisesRegex(ValueError,'already exists'):self.app.write_motion(i,'orig',tracks[:1],seconds=4)
+    def test_write_motion_works_when_the_plugin_data_folder_lives_under_dot_hermes(self):
+        # a normal Hermes install keeps plugin data under ~/.hermes; the plugin's own working copy must not count as a private path
+        data = self.root / '.hermes' / 'profiles' / 'p' / 'plugin-data'; data.mkdir(parents=True)
+        app = Production(data); i = app.open_existing('Test idol', str(self.model))['model_id']
+        with patch.object(app, '_core_ranges', return_value={'ParamAngleX': (-30, 30)}):
+            r = app.write_motion(i, 'alive', [{'parameter': 'ParamAngleX', 'wave': 'sine', 'center': 0, 'amplitude': 10, 'cycles': 2}], seconds=4, fps=15)
+        self.assertEqual(r['check']['errors'], [])
+        # the model-facing tool still refuses a private path, and cannot set the internal root
+        from existing_fixture import motion
+        with self.assertRaisesRegex(ValueError, 'Private paths'): motion.read_json(str(self.root / '.hermes' / 'x.cdi3.json'), '.cdi3.json')
     def test_motion_names_resolve_for_rendering(self):
         i=self.app.open_existing('Test idol',str(self.model))['model_id'];p,data=self.app.load(i);model=p/data['model_path']
         self.assertEqual(self.app._motion_arg(model.parent,json.loads(model.read_text()),None),'standard');self.assertEqual(self.app._motion_arg(model.parent,json.loads(model.read_text()),'rest'),'rest')

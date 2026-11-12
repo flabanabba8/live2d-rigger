@@ -10,7 +10,7 @@ usage:
   python corebridge.py inspect MODEL3_JSON --viewer DIR
 Needs Playwright for Python and any Chromium it can launch; ffmpeg for render.
 """
-import argparse, functools, glob, hashlib, http.server, json, math, shutil, subprocess, sys, tempfile, threading
+import argparse, functools, glob, hashlib, http.server, json, math, os, shutil, subprocess, sys, tempfile, threading
 from pathlib import Path
 
 VIEWS = {'full': [-30, -30, 1040, 1700], 'upper': [60, 0, 840, 1260], 'head': [160, -20, 680, 980]}
@@ -207,8 +207,8 @@ def render(model, output, viewer, seconds=8.0, fps=30, view='full', width=720, h
     finally:
         s.close()
     subprocess.run(['ffmpeg', '-v', 'error', '-framerate', str(fps), '-i', str(frames/'%04d.png'), '-vf', 'pad=ceil(iw/2)*2:ceil(ih/2)*2:color=0x26343a,format=yuv420p',
-                    '-c:v', 'libx264', '-crf', '18', str(out/'motion.mp4')], check=True)
-    subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', str(out/'motion.mp4'), '-vf', f'fps={6/seconds:.5f},scale=360:-2,tile=6x1', '-frames:v', '1', str(out/'contact-sheet.png')], check=False)
+                    '-c:v', 'libx264', '-crf', '18', str(out/'motion.mp4')], check=True, env=_clean_env())
+    subprocess.run(['ffmpeg', '-v', 'error', '-y', '-i', str(out/'motion.mp4'), '-vf', f'fps={6/seconds:.5f},scale=360:-2,tile=6x1', '-frames:v', '1', str(out/'contact-sheet.png')], check=False, env=_clean_env())
     (out/'report.json').write_text(json.dumps(info, indent=2))
     shutil.rmtree(frames)
     return info
@@ -232,3 +232,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+def _clean_env():
+    return {k: v for k, v in os.environ.items() if k in ('PATH', 'HOME', 'LANG', 'LC_ALL', 'TMPDIR')}

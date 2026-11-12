@@ -8,17 +8,33 @@ SETUP = ('First-use interview and environment scan. Without answers: returns wha
 GATED = ('live2d_begin_model', 'live2d_build_model')
 
 
-def invoke(name, args):
+SETTING_KEYS = ('java', 'umamo_classpath_file', 'render_python', 'viewer_dir', 'authoring_command', 'motion_command')
+
+
+def owner_settings(ctx):
+    """The plugin settings only the owner can set; the model cannot change them through tool arguments."""
+    get = getattr(ctx, 'get_config', None)
+    out = {}
+    for key in SETTING_KEYS:
+        try:
+            value = get(key) if get else None
+        except Exception:
+            value = None
+        if value: out[key] = value
+    return out
+
+
+def invoke(name, args, ctx=None):
     try:
         if name == 'live2d_setup' or name in GATED:
             from plugins.plugin_storage import plugin_data_dir
             from . import resources as R
             root = plugin_data_dir('live2d-rigger')
             if name == 'live2d_setup':
-                return json.dumps(R.apply_setup(root, R.survey(root), args.get('answers'), args.get('knowledge_updates')))
+                return json.dumps(R.apply_setup(root, R.survey(root, owner_settings=owner_settings(ctx)), args.get('answers'), args.get('knowledge_updates')))
             profile = R.load_profile(root)
             if profile is None or not all(profile.get(k) for k in R.ROUTE_KEYS):
-                return json.dumps({**R.interview(root, R.survey(root)), 'next': 'Do not pick the routes for the user. Run the interview first (live2d_setup), then repeat this call.'})
+                return json.dumps({**R.interview(root, R.survey(root, owner_settings=owner_settings(ctx))), 'next': 'Do not pick the routes for the user. Run the interview first (live2d_setup), then repeat this call.'})
         from .production import Production, TOOLS
         from .references import TOOLS as REF_TOOLS, References, run as run_reference
         if name in REF_TOOLS:
@@ -26,7 +42,8 @@ def invoke(name, args):
             return json.dumps(run_reference(References(plugin_data_dir('live2d-rigger')), name, args))
         if name in TOOLS:
             from plugins.plugin_storage import plugin_data_dir
-            return json.dumps(getattr(Production(plugin_data_dir('live2d-rigger')),TOOLS[name][3])(**args))
+            return json.dumps(getattr(Production(plugin_data_dir('live2d-rigger'),owner_settings(ctx)),TOOLS[name][3])(**args))
+        if name == 'live2d_check_motion' and 'own_root' in args: raise ValueError('own_root is not a tool argument')
         return json.dumps((check_motion if name == 'live2d_check_motion' else inspect_resources)(**args))
     except (ValueError, TypeError, OSError, UnicodeError, KeyError, RuntimeError, subprocess.TimeoutExpired) as exc:
         return json.dumps({'error': str(exc)})
@@ -34,12 +51,12 @@ def invoke(name, args):
 def register(ctx):
     from .production import TOOLS
     for name,(description,props,required,method) in TOOLS.items():
-        ctx.register_tool(name=name,toolset='live2d_rigger',schema={'name':name,'description':description,'parameters':{'type':'object','properties':props,'required':required,'additionalProperties':False}},handler=lambda args,_name=name,**kw:invoke(_name,args))
+        ctx.register_tool(name=name,toolset='live2d_rigger',schema={'name':name,'description':description,'parameters':{'type':'object','properties':props,'required':required,'additionalProperties':False}},handler=lambda args,_name=name,**kw:invoke(_name,args,ctx))
     from .references import TOOLS as REF_TOOLS
     for name,(description,props,required,_m) in REF_TOOLS.items():
-        ctx.register_tool(name=name,toolset='live2d_rigger',schema={'name':name,'description':description,'parameters':{'type':'object','properties':props,'required':required,'additionalProperties':False}},handler=lambda args,_name=name,**kw:invoke(_name,args))
+        ctx.register_tool(name=name,toolset='live2d_rigger',schema={'name':name,'description':description,'parameters':{'type':'object','properties':props,'required':required,'additionalProperties':False}},handler=lambda args,_name=name,**kw:invoke(_name,args,ctx))
     ctx.register_tool(name='live2d_setup', toolset='live2d_rigger', schema={'name': 'live2d_setup', 'description': SETUP[0], 'parameters': {'type': 'object', 'properties': SETUP[1], 'required': SETUP[2], 'additionalProperties': False}},
-                      handler=lambda args, **kwargs: invoke('live2d_setup', args))
+                      handler=lambda args, **kwargs: invoke('live2d_setup', args, ctx))
     if hasattr(ctx, 'register_skill'):
         from pathlib import Path
         ctx.register_skill('live2d-rigger', Path(__file__).parent / 'skills/live2d-rigger/SKILL.md', description='Create and rig editable Live2D characters from a brief through layered artwork, native authoring and motion review')
