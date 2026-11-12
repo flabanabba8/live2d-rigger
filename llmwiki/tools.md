@@ -2,6 +2,12 @@
 
 Registered source schemas; registration alone does not establish live backend readiness.
 
+## live2d_setup
+
+First-use interview and environment scan. Without answers: returns what this computer has (JDK, Umamo and image tools on PATH, GPU, which image-service keys exist as yes/no), suggestions for image generation (hosted services with price, free tier, transparent-background and reference-edit support; local models that fit the GPU), cutout tools with licences, and rigging toolchains with their limits (Cubism FREE caps, Umamo alpha status, Inochi2D/nijigenerate), whether the built-in knowledge looks out of date (offering online research only if the user says yes), and the questions to ask. With answers: saves them, including the image, cutout and rigging routes the user picked. The plugin never picks for the user. Generates nothing, installs nothing, sends nothing. live2d_begin_model and live2d_build_model return the interview until it is answered.
+
+Inputs: `answers` (optional), `knowledge_updates` (optional).
+
 ## live2d_begin_model
 
 Begin creating a complete editable Live2D character from a brief and the user’s actual resources. Artwork, rigging, native compilation and motion review are production stages; inspectors remain diagnostics.

@@ -2,8 +2,31 @@
   "status": "actual registered source schemas; handlers not executed for schema capture",
   "tools": [
     {
+      "name": "live2d_setup",
+      "description": "First-use interview and environment scan. Without answers: returns what this computer has (JDK, Umamo and image tools on PATH, GPU, which image-service keys exist as yes/no), suggestions for image generation (hosted services with price, free tier, transparent-background and reference-edit support; local models that fit the GPU), cutout tools with licences, and rigging toolchains with their limits (Cubism FREE caps, Umamo alpha status, Inochi2D/nijigenerate), whether the built-in knowledge looks out of date (offering online research only if the user says yes), and the questions to ask. With answers: saves them, including the image, cutout and rigging routes the user picked. The plugin never picks for the user. Generates nothing, installs nothing, sends nothing. live2d_begin_model and live2d_build_model return the interview until it is answered.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "answers": {
+            "type": "object",
+            "description": "character (text), source (own art|ai generated|existing model|official sample), use (personal|vtubing|game|commercial), small_scale (true|false|null), allow_upload (bool), budget_usd (number), has (text), image_route, cutout_route, rig_route (the ids the user picked)."
+          },
+          "knowledge_updates": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "type": "object"
+            },
+            "description": "Only after the user said yes to online research: facts you verified on primary pages. Each item: id (from the wiki tables), field, value, source (https page), date (the day you read it). Saved as dated overrides; the shipped catalog is unchanged."
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      }
+    },
+    {
       "name": "live2d_begin_model",
-      "description": "Begin creating a complete editable Live2D character from a brief and the user’s actual resources. Artwork, rigging, native compilation and motion review are production stages; inspectors remain diagnostics.",
+      "description": "Begin creating a complete editable Live2D character from a brief and the user\u2019s actual resources. Artwork, rigging, native compilation and motion review are production stages; inspectors remain diagnostics.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -334,7 +357,7 @@
     },
     {
       "name": "live2d_write_motion",
-      "description": "Write a new motion (for example an idle that makes her breathe, sway, look around and blink) into an opened copy or built project from plain curve descriptions, validated against the model’s real parameter ids and ranges, and register it as the Idle motion. tracks: list of {parameter, wave:sine (center, amplitude, cycles = whole number per loop, optional phase 0-1) | blink (at: [seconds], optional closed_seconds, open_value, closed_value) | keys ([[seconds, value], ...] eased)}. The structural check runs automatically.",
+      "description": "Write a new motion (for example an idle that makes her breathe, sway, look around and blink) into an opened copy or built project from plain curve descriptions, validated against the model\u2019s real parameter ids and ranges, and register it as the Idle motion. tracks: list of {parameter, wave:sine (center, amplitude, cycles = whole number per loop, optional phase 0-1) | blink (at: [seconds], optional closed_seconds, open_value, closed_value) | keys ([[seconds, value], ...] eased)}. The structural check runs automatically.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -373,7 +396,7 @@
     },
     {
       "name": "live2d_render_clip",
-      "description": "Render the opened or built model moving through the official Cubism Core (physics running) into a labelled motion clip. motion: a motion name from the model or one you wrote; left out it plays the model’s own Idle motion (how she moves now), or standard if it has none; standard = test sequence (head turns left and right, blinks, small body sway); rest = no motion. Same camera and length every time so before/after clips compare directly. Look at the contact sheet in the main session.",
+      "description": "Render the opened or built model moving through the official Cubism Core (physics running) into a labelled motion clip. motion: a motion name from the model or one you wrote; left out it plays the model\u2019s own Idle motion (how she moves now), or standard if it has none; standard = test sequence (head turns left and right, blinks, small body sway); rest = no motion. Same camera and length every time so before/after clips compare directly. Look at the contact sheet in the main session.",
       "parameters": {
         "type": "object",
         "properties": {

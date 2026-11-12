@@ -42,3 +42,5 @@ provider pricing, availability, licenses and schema details before relying on
 an old snapshot. Record task-specific additions in the user's private project
 notes rather than modifying the shipped package automatically. Never store API
 keys, private deployment/device/account identifiers or copyrighted source text.
+
+- [Creating and rigging a character: image routes, cutout tools, rigging toolchains](creation-routes.md) - dated, source-linked; read before recommending a route

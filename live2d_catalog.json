@@ -1,0 +1,457 @@
+{
+  "verified": "2026-11-12",
+  "hosted_image": [
+    {
+      "id": "openai-image",
+      "name": "OpenAI image models",
+      "models": [
+        "gpt-image-2.6-sunburst",
+        "gpt-image-2.6-flare (the guide also names 2.5 versions)"
+      ],
+      "price": "Token priced: image input $8.00 and output $30.00 per 1M tokens; no per-image figure on the page",
+      "free_tier": "No free credits on the pricing page; API credits are separate from the ChatGPT subscription; eligible subscriptions \"may offer promotional credits\" (the benefit article itself was UNVERIFIED)",
+      "transparent_background": "UNVERIFIED (only a summary claimed it)",
+      "reference_image_edit": "Yes: edits take reference images, a markup layer or a mask with alpha",
+      "source": "https://developers.openai.com/api/docs/guides/image-generation",
+      "caveats": "GPT Image models may need API Organization Verification (wording UNVERIFIED).",
+      "verified": "2026-11-12"
+    },
+    {
+      "id": "gemini-image",
+      "name": "Google Gemini image models (Nano Banana family)",
+      "models": [
+        "gemini-3.1-flash-image",
+        "gemini-3.1-flash-lite-image",
+        "gemini-3-pro-image",
+        "gemini-nano-banana-2.1"
+      ],
+      "price": "gemini-3.1-flash-image $0.045 (0.5K) to $0.151 (4K) per image; flash-lite $0.0336 per 1K image; 3-pro-image $0.134 per 1K/2K image",
+      "free_tier": "Free tier \"Not available\" for the models where the page shows it; others UNVERIFIED",
+      "transparent_background": "UNVERIFIED",
+      "reference_image_edit": "Described as conversational editing with multi-turn character consistency; parameters UNVERIFIED",
+      "source": "https://aistudio.google.com/docs/pricing",
+      "caveats": "gemini-2.5-flash-image is shut down on 2027-03-15 (migrate to 3.1 Flash Lite Image).",
+      "verified": "2026-11-12"
+    },
+    {
+      "id": "bfl-flux",
+      "name": "Black Forest Labs FLUX API",
+      "models": [
+        "FLUX 3 Image",
+        "FLUX 3 Image Klein",
+        "FLUX.2 [klein] 4B/9B, [flex], [pro], [max]"
+      ],
+      "price": "FLUX 3 Image $0.041 (768) to $0.607 (4K); Klein $0.008 to $0.036",
+      "free_tier": "Pay as you go; free credits UNVERIFIED",
+      "transparent_background": "UNVERIFIED",
+      "reference_image_edit": "UNVERIFIED",
+      "source": "https://bfl.ai/pricing",
+      "caveats": "",
+      "verified": "2026-11-12"
+    },
+    {
+      "id": "stability",
+      "name": "Stability AI API",
+      "models": [
+        "Stable Image Ultra",
+        "SD 3.5 Large/Medium/Flash",
+        "Remove Background",
+        "Inpaint"
+      ],
+      "price": "1 credit = $0.01: Ultra 8 credits, SD 3.5 Large 6.5, Remove Background 5, Inpaint 5",
+      "free_tier": "25 free credits (card requirement not stated)",
+      "transparent_background": "Remove Background product exists; native alpha output UNVERIFIED",
+      "reference_image_edit": "Inpaint (mask or alpha), Structure, Sketch, Style Guide, Style Transfer products",
+      "source": "https://docs.stability.ai/pricing",
+      "caveats": "",
+      "verified": "2026-11-12"
+    },
+    {
+      "id": "ideogram",
+      "name": "Ideogram API",
+      "models": [
+        "Ideogram 4.0 and 3.0 (including transparent-image endpoints)"
+      ],
+      "price": "1 cent per credit; API per-image price UNVERIFIED",
+      "free_tier": "Prepaid only: $10/$20/$50/$100 or $1-$300; no free tier",
+      "transparent_background": "Yes: transparent-image endpoints for 4.0 and 3.0 exist (the \"(Transparent Background) (legacy)\" variants are legacy)",
+      "reference_image_edit": "not read",
+      "source": "https://developer.ideogram.ai/ideogram-api/api-setup",
+      "caveats": "",
+      "verified": "2026-11-12"
+    },
+    {
+      "id": "recraft",
+      "name": "Recraft API",
+      "models": [
+        "V4.1 Flash",
+        "V4.1",
+        "V4",
+        "V3",
+        "V2"
+      ],
+      "price": "V4.1 Flash $0.007; V4.1 $0.035; V4/V3 $0.04; remove background $0.01; vectorize $0.01",
+      "free_tier": "No free API tier stated; the web Free plan images are owned by Recraft, public and NOT licensed for commercial use",
+      "transparent_background": "Remove-background operation exists; native alpha UNVERIFIED",
+      "reference_image_edit": "Image to image, inpaint, replace background ($0.04 raster)",
+      "source": "https://recraft.ai/docs/api-reference/pricing",
+      "caveats": "",
+      "verified": "2026-11-12"
+    },
+    {
+      "id": "others-unverified",
+      "name": "Leonardo, Midjourney, Adobe Firefly",
+      "models": [],
+      "price": "UNVERIFIED (pricing pages unreachable or no public API found)",
+      "free_tier": "UNVERIFIED",
+      "transparent_background": "UNVERIFIED",
+      "reference_image_edit": "UNVERIFIED",
+      "source": "https://docs.leonardo.ai/docs/getting-started",
+      "caveats": "Leonardo says API access is separate from web subscriptions.",
+      "verified": "2026-11-12"
+    }
+  ],
+  "local_image": [
+    {
+      "id": "flux2-klein-4b",
+      "name": "FLUX.2 klein 4B",
+      "tier": 1,
+      "min_vram_gb": 13,
+      "vram_basis": "stated: fits in about 13 GB VRAM (RTX 3090 / 4070 and above)",
+      "license": "Apache-2.0",
+      "commercial": "yes",
+      "notes": "Cleanly licensed local generator verified for this use.",
+      "source": "https://huggingface.co/black-forest-labs/FLUX.2-klein-4B",
+      "verified": "2026-11-12"
+    },
+    {
+      "id": "z-image-turbo",
+      "name": "Z-Image-Turbo",
+      "tier": 1,
+      "min_vram_gb": 16,
+      "vram_basis": "stated: fits comfortably within 16 GB VRAM consumer devices; 8 NFEs",
+      "license": "Apache-2.0",
+      "commercial": "yes",
+      "notes": "Sub-second on an H800 (stated).",
+      "source": "https://huggingface.co/Tongyi-MAI/Z-Image-Turbo",
+      "verified": "2026-11-12"
+    },
+    {
+      "id": "qwen-image",
+      "name": "Qwen-Image / Qwen-Image-Edit",
+      "tier": 2,
+      "min_vram_gb": null,
+      "vram_basis": "UNVERIFIED on the model card; the README says DiffSynth-Studio offers layer-by-layer offload (\"inference within 4 GB VRAM\") and FP8",
+      "license": "Apache-2.0",
+      "commercial": "yes",
+      "notes": "Edit models take a reference image. Check the VRAM yourself.",
+      "source": "https://github.com/QwenLM/Qwen-Image",
+      "verified": "2026-11-12"
+    },
+    {
+      "id": "qwen-image-layered",
+      "name": "Qwen-Image-Layered",
+      "tier": 2,
+      "min_vram_gb": null,
+      "vram_basis": "UNVERIFIED (repo is 57.7 GB; bf16 on CUDA in the quick start)",
+      "license": "Apache-2.0",
+      "commercial": "yes",
+      "notes": "Decomposes an image into multiple RGBA layers (3 or 8 shown, recursive; 640 resolution recommended). Part-level quality for anime face parts is not shown on the card.",
+      "source": "https://github.com/QwenLM/Qwen-Image-Layered",
+      "verified": "2026-11-12",
+      "role": "layer-splitting"
+    },
+    {
+      "id": "hidream",
+      "name": "HiDream-I1-Full",
+      "tier": 3,
+      "min_vram_gb": null,
+      "vram_basis": "UNVERIFIED",
+      "license": "MIT for the transformer; its text encoder includes Llama 3.1 under its own licence",
+      "commercial": "check",
+      "notes": "",
+      "source": "https://huggingface.co/HiDream-ai/HiDream-I1-Full",
+      "verified": "2026-11-12"
+    },
+    {
+      "id": "flux1-schnell",
+      "name": "FLUX.1 schnell",
+      "tier": 3,
+      "min_vram_gb": null,
+      "vram_basis": "UNVERIFIED",
+      "license": "Apache-2.0",
+      "commercial": "yes",
+      "notes": "",
+      "source": "https://huggingface.co/black-forest-labs/FLUX.1-schnell",
+      "verified": "2026-11-12"
+    },
+    {
+      "id": "flux-dev",
+      "name": "FLUX.1 dev / FLUX.2 dev",
+      "tier": 4,
+      "min_vram_gb": null,
+      "vram_basis": "FLUX.2 dev is 32B BF16; the example uses a 4-bit model plus a remote text encoder on an RTX 4090; no minimum given",
+      "license": "FLUX non-commercial licence (\"other\")",
+      "commercial": "no",
+      "notes": "Non-commercial model use.",
+      "source": "https://huggingface.co/black-forest-labs/FLUX.2-dev",
+      "verified": "2026-11-12"
+    },
+    {
+      "id": "sdxl-anime",
+      "name": "SDXL base, Illustrious-XL, NoobAI-XL",
+      "tier": 3,
+      "min_vram_gb": null,
+      "vram_basis": "UNVERIFIED",
+      "license": "SDXL openrail++; Illustrious and NoobAI licence terms not read (UNVERIFIED)",
+      "commercial": "check",
+      "notes": "Anime fine-tunes of SDXL.",
+      "source": "https://huggingface.co/OnomaAIResearch/Illustrious-xl-early-release-v0",
+      "verified": "2026-11-12"
+    },
+    {
+      "id": "layerdiffuse",
+      "name": "LayerDiffuse (Forge extension)",
+      "tier": 3,
+      "min_vram_gb": null,
+      "vram_basis": "UNVERIFIED",
+      "license": "Apache-2.0",
+      "commercial": "yes",
+      "notes": "SDXL transparent generation and foreground/background layers; handles glass and semi-transparent effects better than background removal. Last push 2024.",
+      "source": "https://github.com/lllyasviel/LayerDiffuse",
+      "verified": "2026-11-12",
+      "role": "transparent-generation"
+    }
+  ],
+  "image_runtimes": [
+    {
+      "id": "comfyui",
+      "name": "ComfyUI",
+      "commands": [
+        "comfy",
+        "comfyui"
+      ],
+      "platforms": "Windows, Linux, macOS; NVIDIA, AMD, Intel, Apple Silicon",
+      "notes": "GPL-3.0; v0.45.0 (2026-11-10); weight streaming \"as low as 4 GB VRAM + 8 GB RAM\"; portable Windows build can run CPU-only",
+      "source": "https://github.com/Comfy-Org/ComfyUI",
+      "verified": "2026-11-12"
+    },
+    {
+      "id": "forge",
+      "name": "Stable Diffusion WebUI Forge",
+      "commands": [],
+      "platforms": "based on SD-WebUI 1.10.1",
+      "notes": "AGPL-3.0; stale (last push 2025-07)",
+      "source": "https://github.com/lllyasviel/stable-diffusion-webui-forge",
+      "verified": "2026-11-12"
+    },
+    {
+      "id": "invokeai",
+      "name": "InvokeAI",
+      "commands": [
+        "invokeai-web",
+        "invokeai"
+      ],
+      "platforms": "desktop/web",
+      "notes": "Apache-2.0; active (2026-11-12)",
+      "source": "https://github.com/invoke-ai/InvokeAI",
+      "verified": "2026-11-12"
+    },
+    {
+      "id": "stable-diffusion-cpp",
+      "name": "stable-diffusion.cpp",
+      "commands": [
+        "sd"
+      ],
+      "platforms": "pure C/C++; backends Vulkan/Metal/CUDA not confirmed",
+      "notes": "MIT; lists Flux, FLUX.2-klein, Qwen-Image, Qwen-Image-Edit, Z-Image",
+      "source": "https://github.com/leejet/stable-diffusion.cpp",
+      "verified": "2026-11-12"
+    },
+    {
+      "id": "diffusers",
+      "name": "Diffusers (Python)",
+      "commands": [],
+      "platforms": "Python",
+      "notes": "Apache-2.0; active",
+      "source": "https://github.com/huggingface/diffusers",
+      "verified": "2026-11-12"
+    },
+    {
+      "id": "draw-things",
+      "name": "Draw Things (Apple)",
+      "commands": [],
+      "platforms": "macOS/iOS app",
+      "notes": "GPL-3.0 community repo; v26.1023.0 (2026-10-23)",
+      "source": "https://github.com/drawthingsai/draw-things-community",
+      "verified": "2026-11-12"
+    }
+  ],
+  "cutout": [
+    {
+      "id": "rembg",
+      "name": "rembg",
+      "commands": [
+        "rembg"
+      ],
+      "license": "MIT",
+      "commercial": "yes",
+      "notes": "Python 3.11-3.13; CLI, library, HTTP server, Docker; CPU by default, GPU via onnxruntime-gpu (CUDA) or ROCm",
+      "source": "https://github.com/danielgatis/rembg",
+      "status": "maintained (2026-11-06)",
+      "verified": "2026-11-12"
+    },
+    {
+      "id": "birefnet",
+      "name": "BiRefNet",
+      "commands": [],
+      "license": "MIT",
+      "commercial": "yes",
+      "notes": "FP16 1024x1024 at 17 FPS in 3.45 GB GPU memory on an RTX 4090 (stated); ONNX available",
+      "source": "https://github.com/ZhengPeng7/BiRefNet",
+      "status": "maintained (2026-10-25)",
+      "verified": "2026-11-12"
+    },
+    {
+      "id": "toonout",
+      "name": "ToonOut (BiRefNet fine-tuned for anime)",
+      "commands": [],
+      "license": "MIT code and weights; dataset CC-BY 4.0",
+      "commercial": "yes",
+      "notes": "1,228 annotated anime images; fork MatteoKartoon/BiRefNet",
+      "source": "https://github.com/MatteoKartoon/BiRefNet",
+      "status": "maintained (2026-06-12)",
+      "verified": "2026-11-12"
+    },
+    {
+      "id": "rmbg-2",
+      "name": "BRIA RMBG-2.0",
+      "commands": [],
+      "license": "CC BY-NC 4.0; commercial use needs an agreement with BRIA",
+      "commercial": "no",
+      "notes": "Avoid for commercial work.",
+      "source": "https://huggingface.co/briaai/RMBG-2.0",
+      "status": "updated 2026-10-21",
+      "verified": "2026-11-12"
+    },
+    {
+      "id": "sam2",
+      "name": "SAM 2 / 2.1",
+      "commands": [],
+      "license": "Apache-2.0",
+      "commercial": "yes",
+      "notes": "Promptable segmentation for part masks",
+      "source": "https://github.com/facebookresearch/sam2",
+      "status": "maintained (2026-05-30)",
+      "verified": "2026-11-12"
+    },
+    {
+      "id": "sam3",
+      "name": "SAM 3",
+      "commands": [],
+      "license": "custom SAM License (Nov 19, 2025); excludes ITAR/trade-control uses; Hugging Face gated",
+      "commercial": "check",
+      "notes": "Needs Python 3.12+, PyTorch 2.7+, a CUDA GPU with CUDA 12.6+",
+      "source": "https://github.com/facebookresearch/sam3",
+      "status": "maintained (2026-11-10)",
+      "verified": "2026-11-12"
+    }
+  ],
+  "rigging": [
+    {
+      "id": "cubism-free",
+      "name": "Live2D Cubism Editor FREE",
+      "commands": [],
+      "cost": "always free",
+      "license": "Free for General Users and Small-Scale Enterprises (annual sales under 10 million yen) including commercial use; others non-commercial/supervision only",
+      "limits": {
+        "texture_files": 1,
+        "texture_px": 2048,
+        "artmeshes": 100,
+        "motion_parameters": 30,
+        "blend_shape_parameters": 3,
+        "deformers": 50,
+        "parts": 30,
+        "warp_divisions": "9x9"
+      },
+      "notes": "Exceeding a limit means you cannot save the file. PRO files open in FREE. Windows and macOS only (no Linux build listed).",
+      "source": "https://www.live2d.com/en/cubism/comparison/",
+      "verified": "2026-11-12"
+    },
+    {
+      "id": "cubism-pro",
+      "name": "Live2D Cubism Editor PRO",
+      "commands": [],
+      "cost": "price UNVERIFIED (purchase page did not load); 42-day trial; student discount 76% off a 3-year subscription",
+      "license": "subscription; no texture/ArtMesh limits; warp divisions up to 100x100",
+      "limits": {},
+      "notes": "Windows and macOS. Current build 5.3.04 (2026-09-03).",
+      "source": "https://www.live2d.com/en/cubism/download/editor/",
+      "verified": "2026-11-12"
+    },
+    {
+      "id": "umamo",
+      "name": "Umamo",
+      "commands": [],
+      "cost": "free (GPL-3.0)",
+      "license": "GPL-3.0",
+      "limits": {},
+      "notes": "ALPHA, early development (v0.5.0, 2026-11-07); imports/exports CMO3 and MOC3, native .uma; no animation yet; Windows, macOS, Linux; the .jar needs Java 21+, packaged builds do not. This plugin builds through it.",
+      "source": "https://github.com/umamoorg/umamo",
+      "verified": "2026-11-12"
+    },
+    {
+      "id": "inochi2d",
+      "name": "Inochi2D / Inochi Creator",
+      "commands": [],
+      "cost": "free (BSD-2-Clause)",
+      "license": "BSD-2-Clause",
+      "limits": {},
+      "notes": "Inochi Creator latest release v0.8.6 (2024-09-18), last push 2025-06-16: effectively unmaintained. VTube Studio loading Inochi formats: UNVERIFIED.",
+      "source": "https://github.com/Inochi2D/inochi-creator",
+      "verified": "2026-11-12"
+    },
+    {
+      "id": "nijigenerate",
+      "name": "nijigenerate",
+      "commands": [],
+      "cost": "free (BSD-2-Clause)",
+      "license": "BSD-2-Clause",
+      "limits": {},
+      "notes": "v1.0.0-beta4 (2026-10-10); no official stable build; nijilive format derived from Inochi2D 0.8; companion VTuber app nijiexpose.",
+      "source": "https://github.com/nijigenerate/nijigenerate",
+      "verified": "2026-11-12"
+    }
+  ],
+  "publishing": [
+    {
+      "id": "cubism-sdk-license",
+      "name": "Cubism SDK / Publication License",
+      "finding": "The SDK is downloadable at no initial cost. Business entities must sign the SDK Release License (Publication License Agreement) at least one month before release; individuals and Small-Scale Enterprises are exempt except for \"Expandable Applications\". VTubing needs a separate agreement above 20 million yen annual revenue \"under certain conditions\"; VTuber tracking software counts as an Expandable Application.",
+      "source": "https://www.live2d.com/en/sdk/license/",
+      "verified": "2026-11-12"
+    },
+    {
+      "id": "vtube-studio",
+      "name": "VTube Studio model requirements",
+      "finding": "Needs <model>.model3.json, <model>.moc3 and the texture folder in a Live2DModels folder. Export from Cubism with File > Export For Runtime > Export as .moc3 (export version SDK 3.0, 3.3, 4.0, 5.0 or newer) and export physics3.json. Large textures may lag or crash on mobile. Only Cubism .moc3 is confirmed; Inochi formats are UNVERIFIED.",
+      "source": "https://github.com/DenchiSoft/VTubeStudio/wiki/Loading-your-own-Models",
+      "verified": "2026-11-12"
+    },
+    {
+      "id": "live2d-samples",
+      "name": "Official sample models",
+      "finding": "Governed by the Free Material License Agreement and the Cubism Sample Data Terms of Use; commercial rights UNVERIFIED (terms not read). Sample code CubismWebSamples/NativeSamples 5-r.5 (2026-04-02).",
+      "source": "https://www.live2d.com/en/learn/sample/",
+      "verified": "2026-11-12"
+    }
+  ],
+  "expiries": [
+    {
+      "date": "2027-03-15",
+      "what": "Google shuts down gemini-2.5-flash-image (migrate to 3.1 Flash Lite Image)",
+      "source": "https://aistudio.google.com/docs/pricing"
+    }
+  ],
+  "notes": "ids in tables are the keys the setup tool accepts; UNVERIFIED means no primary page confirmed it."
+}

@@ -3,6 +3,15 @@ name: live2d-rigger
 description: Create and rig an editable Live2D character from a brief, through complete layered artwork, native compilation and motion review.
 ---
 
+## First use: scan, ask, never pick
+
+Do not choose an image route, a cutout tool or a rigging toolchain for the user. `live2d_begin_model` and `live2d_build_model` return the interview until it is answered. Run `live2d_setup` first:
+
+1. Show what it found (JDK, Umamo and image tools on PATH, GPU, which image-service keys exist as yes/no) and the suggestions in `recommendations`: image routes, cutout tools with licences, rigging toolchains with their limits. Cubism FREE cannot save a file over its limits (1 texture of 2048 px, 100 ArtMeshes, 30 parts, 50 deformers); say when the rig the user describes would exceed them. Say plainly what is UNVERIFIED (for example the PRO price).
+2. Ask in one short message: what character, where the art comes from, what it is for, whether annual sales are under 10 million yen, whether online image services are OK, the budget, what they already have, and which image route, cutout tool and rigging toolchain they want. Install and generate nothing without their yes. Never ask for a key in chat.
+3. Read `knowledge_freshness`; if stale, tell the user and ask whether to research the current facts online. Never research without their yes; save only what you verified with `knowledge_updates`.
+4. Save the answers (including the three routes) with `live2d_setup`, then continue.
+
 Default workflow: the user describes the character they want; you generate complete separate artwork parts with the host's native image tools, rig them, build, show motion, and the user only reports issues they see, which you then fix (one targeted repair at a time). Early in that flow, get the official free Live2D sample models as structure references: call live2d_reference_samples; if the ones you need are not present, tell the user plainly what you will download (which samples, from Live2D's own sample-data site, into this plugin's data folder), show the licence links it returns, and only after the user agrees call live2d_fetch_reference_sample with accept_licence=true, one sample at a time. Reuse samples that are already present. Study them with live2d_reference_samples (sample_id) and live2d_inspect_resources/live2d_check_motion for part split, parameters, physics, expressions and motion groups. Use them only as structural references; never copy their artwork into the user's model and never redistribute them. Read [the references page](../../llmwiki/references.md).
 
 Read the [bundled wiki](../../llmwiki/index.md), especially its production guide, before choosing tools. Ask for character identity/reference, intended expressions/motion, target Cubism/Core version, editable-source deliverables and actual authoring resources. A reference portrait is not a set of complete riggable parts.

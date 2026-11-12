@@ -3,8 +3,22 @@ import subprocess
 from .core import inspect_resources
 from .motion import check_motion
 
+SETUP = ('First-use interview and environment scan. Without answers: returns what this computer has (JDK, Umamo and image tools on PATH, GPU, which image-service keys exist as yes/no), suggestions for image generation (hosted services with price, free tier, transparent-background and reference-edit support; local models that fit the GPU), cutout tools with licences, and rigging toolchains with their limits (Cubism FREE caps, Umamo alpha status, Inochi2D/nijigenerate), whether the built-in knowledge looks out of date (offering online research only if the user says yes), and the questions to ask. With answers: saves them, including the image, cutout and rigging routes the user picked. The plugin never picks for the user. Generates nothing, installs nothing, sends nothing. live2d_begin_model and live2d_build_model return the interview until it is answered.',
+         {'answers': {'type': 'object', 'description': 'character (text), source (own art|ai generated|existing model|official sample), use (personal|vtubing|game|commercial), small_scale (true|false|null), allow_upload (bool), budget_usd (number), has (text), image_route, cutout_route, rig_route (the ids the user picked).'}, 'knowledge_updates': {'type': 'array', 'maxItems': 100, 'items': {'type': 'object'}, 'description': 'Only after the user said yes to online research: facts you verified on primary pages. Each item: id (from the wiki tables), field, value, source (https page), date (the day you read it). Saved as dated overrides; the shipped catalog is unchanged.'}}, [])
+GATED = ('live2d_begin_model', 'live2d_build_model')
+
+
 def invoke(name, args):
     try:
+        if name == 'live2d_setup' or name in GATED:
+            from plugins.plugin_storage import plugin_data_dir
+            from . import resources as R
+            root = plugin_data_dir('live2d-rigger')
+            if name == 'live2d_setup':
+                return json.dumps(R.apply_setup(root, R.survey(root), args.get('answers'), args.get('knowledge_updates')))
+            profile = R.load_profile(root)
+            if profile is None or not all(profile.get(k) for k in R.ROUTE_KEYS):
+                return json.dumps({**R.interview(root, R.survey(root)), 'next': 'Do not pick the routes for the user. Run the interview first (live2d_setup), then repeat this call.'})
         from .production import Production, TOOLS
         from .references import TOOLS as REF_TOOLS, References, run as run_reference
         if name in REF_TOOLS:
@@ -24,6 +38,8 @@ def register(ctx):
     from .references import TOOLS as REF_TOOLS
     for name,(description,props,required,_m) in REF_TOOLS.items():
         ctx.register_tool(name=name,toolset='live2d_rigger',schema={'name':name,'description':description,'parameters':{'type':'object','properties':props,'required':required,'additionalProperties':False}},handler=lambda args,_name=name,**kw:invoke(_name,args))
+    ctx.register_tool(name='live2d_setup', toolset='live2d_rigger', schema={'name': 'live2d_setup', 'description': SETUP[0], 'parameters': {'type': 'object', 'properties': SETUP[1], 'required': SETUP[2], 'additionalProperties': False}},
+                      handler=lambda args, **kwargs: invoke('live2d_setup', args))
     if hasattr(ctx, 'register_skill'):
         from pathlib import Path
         ctx.register_skill('live2d-rigger', Path(__file__).parent / 'skills/live2d-rigger/SKILL.md', description='Create and rig editable Live2D characters from a brief through layered artwork, native authoring and motion review')
