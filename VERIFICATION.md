@@ -57,3 +57,8 @@ A real Core render of a prototype without placed eyelids produced three eye-clos
 - Bugs this found and fixed: the Kotlin sources were written for Umamo 0.4.0 and did not compile against the 0.5.0 release (`DrawableMesh` takes a separate local position array; `Moc3Sidecars.bundle` no longer takes `canvasToParentSpace`), now written for 0.5.0; the plugin's own post-build resource check refused its own output because the data folder sits under `.hermes` (same class as the earlier write_motion bug); `corebridge.py` defined `_clean_env` after its `main()` call, so every Core render died with a NameError after the frames were drawn; `live2d_render_clip` on a project with no model reported a bare KeyError.
 - Tested here: 79 Python tests (1 skipped). Not tested: Umamo 0.4.0 (the sources no longer compile against it), the Cubism Editor, any image generation, `live2d_fetch_reference_sample` with the licence accepted (the user must accept Live2D's terms, so a test must not).
 - The viewer folder is the user's own (index.html, viewer.js, core.min.js and framework/Shaders); the one used here was assembled from earlier local Cubism SDK for Web files.
+
+## 0.6.3 - README rewritten around creation (2026-11-13)
+
+- Documentation only: the README now leads with creating a character (scan and ask, brief, complete parts, layout, rig, build, motion review, reported fixes), states what the experimental rig does and does not supply, and lists the owner settings from the manifest in place of environment variables. No code changed.
+- Checked: every tool named in the README is declared in `plugin.yaml`; the Python tests and `hermes plugins validate` pass. Not checked: whether the older environment variables still work (the README no longer mentions them).
