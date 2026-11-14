@@ -1,5 +1,7 @@
 # Verification
 
+- 2026-11-14: the `requires_hermes` floor in `plugin.yaml` is now `>=0.22.3`, matching the catalog entry (catalog rule 14). No code changed; validation was re-run on the commit.
+
 - Mixed-case protected-directory fixtures passed on Linux and native Windows; no real credentials were used. This is not a full platform or publication audit.
 
 - Native Windows Python 3.14 checked the references in a synthetic model file with dummy resources. No user rig was accessed.
